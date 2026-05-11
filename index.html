@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Collection Manager (Cloud)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(229, 231, 235, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Auth View -->
+    <div id="view-auth" class="flex items-center justify-center min-h-screen p-4">
+        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <h2 id="auth-title" class="text-2xl font-bold text-slate-800 mb-2">Teacher Login</h2>
+            <p id="auth-subtitle" class="text-slate-500 mb-6 text-sm">Sign in to manage your question collections.</p>
+            <div class="space-y-4">
+                <input type="email" id="auth-email" placeholder="Email" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="auth-password" placeholder="Password" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="btn-auth-primary" onclick="authActions.handleAuth()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Login</button>
+                <div class="text-center mt-4">
+                    <button onclick="authActions.toggleMode()" id="btn-auth-toggle" class="text-sm text-indigo-600 hover:underline">Need an account? Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden max-w-6xl mx-auto p-4 md:p-8">
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">EduCollector</h1>
+                <p id="user-display" class="text-slate-500 text-sm italic">Authenticating...</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="ui.showView('dashboard')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">My Collections</button>
+                <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">+ New Collection</button>
+                <button onclick="authActions.logout()" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Logout</button>
+            </div>
+        </header>
+
+        <!-- View: Dashboard -->
+        <section id="view-dashboard" class="view">
+            <div id="collections-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="empty-state" class="hidden text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
+                <p class="text-slate-400">No collections found. Create your first one!</p>
+            </div>
+        </section>
+
+        <!-- View: Create Collection -->
+        <section id="view-create-collection" class="view hidden max-w-lg mx-auto">
+            <div class="glass-card p-6 rounded-2xl shadow-xl">
+                <h2 class="text-xl font-bold mb-4">Create New Collection</h2>
+                <div class="space-y-4">
+                    <input type="text" id="new-col-title" placeholder="Collection Title" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <input type="text" id="new-col-subject" placeholder="Subject" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <div class="flex gap-2 pt-4">
+                        <button onclick="actions.saveCollection()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium">Save Collection</button>
+                        <button onclick="ui.showView('dashboard')" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-lg font-medium">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Manage Questions -->
+        <section id="view-manage-questions" class="view hidden">
+            <div class="flex items-center mb-6 gap-4">
+                <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <h2 id="active-collection-title" class="text-2xl font-bold text-slate-800">Questions</h2>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="glass-card p-6 rounded-xl shadow-md">
+                        <h3 class="font-semibold mb-4">Add Question</h3>
+                        <textarea id="q-text" placeholder="Question Text" rows="3" class="w-full p-2 border border-slate-300 rounded-lg text-sm mb-4"></textarea>
+                        <input type="text" id="q-answer" placeholder="Correct Answer" class="w-full p-2 border border-slate-300 rounded-lg text-sm mb-4">
+                        <button onclick="actions.addQuestionManual()" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium">Add to List</button>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl bg-indigo-50/30">
+                        <h3 class="font-semibold mb-2">Bulk Import</h3>
+                        <input type="file" id="csv-file" accept=".csv" class="hidden" onchange="actions.handleCSVUpload(event)">
+                        <button onclick="document.getElementById('csv-file').click()" class="w-full bg-white border border-slate-300 text-slate-700 py-2 rounded-lg text-sm">Upload CSV</button>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
+                                <tr><th class="px-6 py-4">Question & Answer</th><th class="px-6 py-4 text-right">Action</th></tr>
+                            </thead>
+                            <tbody id="questions-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                        <div id="questions-empty" class="p-12 text-center text-slate-400">No questions yet.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl transition-transform translate-y-24 pointer-events-none opacity-0 z-50"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGDOTODDO5-yWRx09f3Q--0J9HHNNbYWs",
+            authDomain: "pass-the-cards.firebaseapp.com",
+            projectId: "pass-the-cards",
+            storageBucket: "pass-the-cards.firebasestorage.app",
+            messagingSenderId: "376596807086",
+            appId: "1:376596807086:web:5b3e89a93c7257b9b75c3f",
+            measurementId: "G-9K53RM40K9"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let collections = [];
+        let activeCollectionId = null;
+        let isLoginMode = true;
+
+        // AUTH ACTIONS
+        window.authActions = {
+            toggleMode: () => {
+                isLoginMode = !isLoginMode;
+                document.getElementById('auth-title').innerText = isLoginMode ? 'Teacher Login' : 'Create Teacher Account';
+                document.getElementById('btn-auth-primary').innerText = isLoginMode ? 'Login' : 'Sign Up';
+                document.getElementById('btn-auth-toggle').innerText = isLoginMode ? 'Need an account? Sign Up' : 'Already have an account? Login';
+            },
+            handleAuth: async () => {
+                const email = document.getElementById('auth-email').value.trim();
+                const pass = document.getElementById('auth-password').value.trim();
+                if (!email || !pass) return ui.notify("Email and password required");
+
+                try {
+                    if (isLoginMode) {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                    } else {
+                        await createUserWithEmailAndPassword(auth, email, pass);
+                    }
+                    ui.notify("Welcome!");
+                } catch (e) {
+                    ui.notify("Auth Error: " + e.message);
+                }
+            },
+            logout: () => signOut(auth)
+        };
+
+        // DATABASE ACTIONS
+        window.actions = {
+            saveCollection: async () => {
+                if (!currentUser) return ui.notify("Not logged in");
+                const title = document.getElementById('new-col-title').value.trim();
+                const subject = document.getElementById('new-col-subject').value.trim();
+                if (!title) return ui.notify("Title required");
+
+                const id = Date.now().toString();
+                // CRITICAL PATH: /artifacts/{appId}/users/{userId}/{collectionName}/{docId}
+                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id);
+                
+                try {
+                    await setDoc(colRef, {
+                        id,
+                        title,
+                        subject: subject || 'General',
+                        questions: [],
+                        createdAt: new Date().toISOString()
+                    });
+                    ui.showView('dashboard');
+                    document.getElementById('new-col-title').value = '';
+                    document.getElementById('new-col-subject').value = '';
+                    ui.notify("Collection Saved Successfully!");
+                } catch (e) { 
+                    console.error(e);
+                    ui.notify("Save Error: " + e.message); 
+                }
+            },
+
+            deleteCollection: async (id) => {
+                if (!currentUser) return;
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id));
+                    ui.notify("Collection deleted");
+                } catch (e) { ui.notify(e.message); }
+            },
+
+            addQuestionManual: async () => {
+                if (!currentUser || !activeCollectionId) return;
+                const text = document.getElementById('q-text').value.trim();
+                const answer = document.getElementById('q-answer').value.trim();
+                if (!text || !answer) return ui.notify("Both fields required");
+
+                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                try {
+                    await updateDoc(colRef, {
+                        questions: arrayUnion({ id: Date.now().toString(), text, answer })
+                    });
+                    document.getElementById('q-text').value = '';
+                    document.getElementById('q-answer').value = '';
+                    ui.notify("Question added!");
+                } catch (e) { ui.notify(e.message); }
+            },
+
+            removeQuestion: async (q) => {
+                if (!currentUser || !activeCollectionId) return;
+                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                try {
+                    await updateDoc(colRef, { questions: arrayRemove(q) });
+                } catch (e) { ui.notify(e.message); }
+            },
+
+            handleCSVUpload: (event) => {
+                const file = event.target.files[0];
+                if (!file || !currentUser || !activeCollectionId) return;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const lines = e.target.result.split(/\r?\n/);
+                    const newQs = [];
+                    lines.forEach(line => {
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            newQs.push({ id: Math.random().toString(36).substr(2, 9), text: parts[0].trim(), answer: parts.slice(1).join(',').trim() });
+                        }
+                    });
+                    if (newQs.length > 0) {
+                        const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                        await updateDoc(colRef, { questions: arrayUnion(...newQs) });
+                        ui.notify(`Imported ${newQs.length} questions!`);
+                    }
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        const ui = {
+            notify: (msg) => {
+                const t = document.getElementById('toast');
+                t.innerText = msg;
+                t.classList.remove('translate-y-24', 'opacity-0');
+                setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3000);
+            },
+            showView: (name) => {
+                document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+                document.getElementById(`view-${name}`).classList.remove('hidden');
+            },
+            renderCollections: (data) => {
+                const list = document.getElementById('collections-list');
+                const empty = document.getElementById('empty-state');
+                list.innerHTML = '';
+                if (data.length === 0) return empty.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                data.forEach(col => {
+                    const el = document.createElement('div');
+                    el.className = "glass-card p-6 rounded-xl hover:shadow-lg cursor-pointer transition relative group";
+                    el.innerHTML = `
+                        <div onclick="ui.openCollection('${col.id}')">
+                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">${col.subject}</span>
+                            <h3 class="text-xl font-bold mt-2">${col.title}</h3>
+                            <p class="text-sm text-slate-500">${col.questions?.length || 0} Questions</p>
+                        </div>
+                        <button onclick="actions.deleteCollection('${col.id}')" class="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    `;
+                    list.appendChild(el);
+                });
+            },
+            openCollection: (id) => {
+                activeCollectionId = id;
+                const col = collections.find(c => c.id === id);
+                if (!col) return;
+                document.getElementById('active-collection-title').innerText = col.title;
+                ui.showView('manage-questions');
+                ui.renderQuestions(col.questions || []);
+            },
+            renderQuestions: (qs) => {
+                const tbody = document.getElementById('questions-table-body');
+                const empty = document.getElementById('questions-empty');
+                tbody.innerHTML = '';
+                if (qs.length === 0) return empty.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                qs.forEach(q => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <p class="font-medium text-slate-700">${q.text}</p>
+                            <p class="text-xs text-emerald-600 mt-1">Answer: ${q.answer}</p>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick='actions.removeQuestion(${JSON.stringify(q)})' class="text-slate-300 hover:text-red-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        };
+        window.ui = ui;
+
+        // AUTH & SYNC
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const authView = document.getElementById('view-auth');
+            const mainApp = document.getElementById('main-app');
+            const userDisplay = document.getElementById('user-display');
+
+            if (user) {
+                authView.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                userDisplay.innerText = `Signed in as: ${user.email}`;
+                
+                // Set up real-time listener
+                const colPath = collection(db, 'artifacts', appId, 'users', user.uid, 'collections');
+                onSnapshot(colPath, (snapshot) => {
+                    collections = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+                    ui.renderCollections(collections);
+                    if (activeCollectionId) {
+                        const active = collections.find(c => c.id === activeCollectionId);
+                        if (active) ui.renderQuestions(active.questions || []);
+                    }
+                }, (err) => ui.notify("Sync Error: " + err.message));
+            } else {
+                authView.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                userDisplay.innerText = "Authenticating...";
+            }
+        });
+    </script>
+</body>
+</html>
