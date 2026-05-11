@@ -63,7 +63,7 @@
                     <input type="text" id="new-col-title" placeholder="Collection Title" class="w-full p-2 border border-slate-300 rounded-lg">
                     <input type="text" id="new-col-subject" placeholder="Subject" class="w-full p-2 border border-slate-300 rounded-lg">
                     <div class="flex gap-2 pt-4">
-                        <button onclick="actions.saveCollection()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium">Save Collection</button>
+                        <button id="btn-save-col" onclick="actions.saveCollection()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium disabled:bg-indigo-300">Save Collection</button>
                         <button onclick="ui.showView('dashboard')" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-lg font-medium">Cancel</button>
                     </div>
                 </div>
@@ -111,18 +111,11 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBGDOTODDO5-yWRx09f3Q--0J9HHNNbYWs",
-            authDomain: "pass-the-cards.firebaseapp.com",
-            projectId: "pass-the-cards",
-            storageBucket: "pass-the-cards.firebasestorage.app",
-            messagingSenderId: "376596807086",
-            appId: "1:376596807086:web:5b3e89a93c7257b9b75c3f",
-            measurementId: "G-9K53RM40K9"
-        };
+        // Environment globals
+        const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const app = initializeApp(firebaseConfig);
@@ -134,120 +127,7 @@
         let activeCollectionId = null;
         let isLoginMode = true;
 
-        // AUTH ACTIONS
-        window.authActions = {
-            toggleMode: () => {
-                isLoginMode = !isLoginMode;
-                document.getElementById('auth-title').innerText = isLoginMode ? 'Teacher Login' : 'Create Teacher Account';
-                document.getElementById('btn-auth-primary').innerText = isLoginMode ? 'Login' : 'Sign Up';
-                document.getElementById('btn-auth-toggle').innerText = isLoginMode ? 'Need an account? Sign Up' : 'Already have an account? Login';
-            },
-            handleAuth: async () => {
-                const email = document.getElementById('auth-email').value.trim();
-                const pass = document.getElementById('auth-password').value.trim();
-                if (!email || !pass) return ui.notify("Email and password required");
-
-                try {
-                    if (isLoginMode) {
-                        await signInWithEmailAndPassword(auth, email, pass);
-                    } else {
-                        await createUserWithEmailAndPassword(auth, email, pass);
-                    }
-                    ui.notify("Welcome!");
-                } catch (e) {
-                    ui.notify("Auth Error: " + e.message);
-                }
-            },
-            logout: () => signOut(auth)
-        };
-
-        // DATABASE ACTIONS
-        window.actions = {
-            saveCollection: async () => {
-                if (!currentUser) return ui.notify("Not logged in");
-                const title = document.getElementById('new-col-title').value.trim();
-                const subject = document.getElementById('new-col-subject').value.trim();
-                if (!title) return ui.notify("Title required");
-
-                const id = Date.now().toString();
-                // CRITICAL PATH: /artifacts/{appId}/users/{userId}/{collectionName}/{docId}
-                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id);
-                
-                try {
-                    await setDoc(colRef, {
-                        id,
-                        title,
-                        subject: subject || 'General',
-                        questions: [],
-                        createdAt: new Date().toISOString()
-                    });
-                    ui.showView('dashboard');
-                    document.getElementById('new-col-title').value = '';
-                    document.getElementById('new-col-subject').value = '';
-                    ui.notify("Collection Saved Successfully!");
-                } catch (e) { 
-                    console.error(e);
-                    ui.notify("Save Error: " + e.message); 
-                }
-            },
-
-            deleteCollection: async (id) => {
-                if (!currentUser) return;
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id));
-                    ui.notify("Collection deleted");
-                } catch (e) { ui.notify(e.message); }
-            },
-
-            addQuestionManual: async () => {
-                if (!currentUser || !activeCollectionId) return;
-                const text = document.getElementById('q-text').value.trim();
-                const answer = document.getElementById('q-answer').value.trim();
-                if (!text || !answer) return ui.notify("Both fields required");
-
-                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
-                try {
-                    await updateDoc(colRef, {
-                        questions: arrayUnion({ id: Date.now().toString(), text, answer })
-                    });
-                    document.getElementById('q-text').value = '';
-                    document.getElementById('q-answer').value = '';
-                    ui.notify("Question added!");
-                } catch (e) { ui.notify(e.message); }
-            },
-
-            removeQuestion: async (q) => {
-                if (!currentUser || !activeCollectionId) return;
-                const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
-                try {
-                    await updateDoc(colRef, { questions: arrayRemove(q) });
-                } catch (e) { ui.notify(e.message); }
-            },
-
-            handleCSVUpload: (event) => {
-                const file = event.target.files[0];
-                if (!file || !currentUser || !activeCollectionId) return;
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const lines = e.target.result.split(/\r?\n/);
-                    const newQs = [];
-                    lines.forEach(line => {
-                        const parts = line.split(',');
-                        if (parts.length >= 2) {
-                            newQs.push({ id: Math.random().toString(36).substr(2, 9), text: parts[0].trim(), answer: parts.slice(1).join(',').trim() });
-                        }
-                    });
-                    if (newQs.length > 0) {
-                        const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
-                        await updateDoc(colRef, { questions: arrayUnion(...newQs) });
-                        ui.notify(`Imported ${newQs.length} questions!`);
-                    }
-                    event.target.value = '';
-                };
-                reader.readAsText(file);
-            }
-        };
-
+        // UI HELPERS
         const ui = {
             notify: (msg) => {
                 const t = document.getElementById('toast');
@@ -271,7 +151,7 @@
                     el.className = "glass-card p-6 rounded-xl hover:shadow-lg cursor-pointer transition relative group";
                     el.innerHTML = `
                         <div onclick="ui.openCollection('${col.id}')">
-                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">${col.subject}</span>
+                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">${col.subject || 'General'}</span>
                             <h3 class="text-xl font-bold mt-2">${col.title}</h3>
                             <p class="text-sm text-slate-500">${col.questions?.length || 0} Questions</p>
                         </div>
@@ -305,18 +185,140 @@
                             <p class="text-xs text-emerald-600 mt-1">Answer: ${q.answer}</p>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button onclick='actions.removeQuestion(${JSON.stringify(q)})' class="text-slate-300 hover:text-red-500">
+                            <button class="text-slate-300 hover:text-red-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                             </button>
                         </td>
                     `;
+                    row.querySelector('button').onclick = () => actions.removeQuestion(q);
                     tbody.appendChild(row);
                 });
             }
         };
         window.ui = ui;
 
-        // AUTH & SYNC
+        // ACTIONS
+        window.authActions = {
+            toggleMode: () => {
+                isLoginMode = !isLoginMode;
+                document.getElementById('auth-title').innerText = isLoginMode ? 'Teacher Login' : 'Create Teacher Account';
+                document.getElementById('btn-auth-primary').innerText = isLoginMode ? 'Login' : 'Sign Up';
+                document.getElementById('btn-auth-toggle').innerText = isLoginMode ? 'Need an account? Sign Up' : 'Already have an account? Login';
+            },
+            handleAuth: async () => {
+                const email = document.getElementById('auth-email').value.trim();
+                const pass = document.getElementById('auth-password').value.trim();
+                if (!email || !pass) return ui.notify("Email and password required");
+
+                try {
+                    if (isLoginMode) {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                    } else {
+                        await createUserWithEmailAndPassword(auth, email, pass);
+                    }
+                    ui.notify("Success!");
+                } catch (e) { ui.notify(e.message); }
+            },
+            logout: () => signOut(auth)
+        };
+
+        window.actions = {
+            saveCollection: async () => {
+                if (!currentUser) return ui.notify("Auth error: User not ready");
+                const title = document.getElementById('new-col-title').value.trim();
+                const subject = document.getElementById('new-col-subject').value.trim();
+                const btn = document.getElementById('btn-save-col');
+                
+                if (!title) return ui.notify("Title required");
+
+                try {
+                    btn.disabled = true;
+                    btn.innerText = "Saving...";
+                    const id = Date.now().toString();
+                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id);
+                    
+                    await setDoc(colRef, {
+                        id,
+                        title,
+                        subject: subject || 'General',
+                        questions: [],
+                        createdAt: new Date().toISOString()
+                    });
+
+                    ui.showView('dashboard');
+                    document.getElementById('new-col-title').value = '';
+                    document.getElementById('new-col-subject').value = '';
+                    ui.notify("Collection Saved!");
+                } catch (e) {
+                    ui.notify("Error: " + e.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "Save Collection";
+                }
+            },
+            deleteCollection: async (id) => {
+                if (!currentUser) return;
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id));
+                } catch (e) { ui.notify(e.message); }
+            },
+            addQuestionManual: async () => {
+                if (!currentUser || !activeCollectionId) return;
+                const text = document.getElementById('q-text').value.trim();
+                const answer = document.getElementById('q-answer').value.trim();
+                if (!text || !answer) return ui.notify("Fields required");
+
+                try {
+                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                    await updateDoc(colRef, {
+                        questions: arrayUnion({ id: Date.now().toString(), text, answer })
+                    });
+                    document.getElementById('q-text').value = '';
+                    document.getElementById('q-answer').value = '';
+                } catch (e) { ui.notify(e.message); }
+            },
+            removeQuestion: async (q) => {
+                if (!currentUser || !activeCollectionId) return;
+                try {
+                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                    await updateDoc(colRef, { questions: arrayRemove(q) });
+                } catch (e) { ui.notify(e.message); }
+            },
+            handleCSVUpload: (event) => {
+                const file = event.target.files[0];
+                if (!file || !currentUser || !activeCollectionId) return;
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const lines = e.target.result.split(/\r?\n/);
+                    const newQs = [];
+                    lines.forEach(line => {
+                        const p = line.split(',');
+                        if (p.length >= 2) newQs.push({ id: Math.random().toString(36).substr(2, 9), text: p[0].trim(), answer: p.slice(1).join(',').trim() });
+                    });
+                    if (newQs.length > 0) {
+                        const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                        await updateDoc(colRef, { questions: arrayUnion(...newQs) });
+                        ui.notify(`Imported ${newQs.length} questions`);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+
+        // AUTH INITIALIZATION (MANDATORY PATTERN)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    // Fallback if no token is provided yet
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth init failed", err);
+            }
+        };
+
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             const authView = document.getElementById('view-auth');
@@ -326,12 +328,11 @@
             if (user) {
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
-                userDisplay.innerText = `Signed in as: ${user.email}`;
+                userDisplay.innerText = `Teacher ID: ${user.uid}`;
                 
-                // Set up real-time listener
                 const colPath = collection(db, 'artifacts', appId, 'users', user.uid, 'collections');
-                onSnapshot(colPath, (snapshot) => {
-                    collections = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+                onSnapshot(colPath, (snap) => {
+                    collections = snap.docs.map(d => d.data());
                     ui.renderCollections(collections);
                     if (activeCollectionId) {
                         const active = collections.find(c => c.id === activeCollectionId);
@@ -341,9 +342,10 @@
             } else {
                 authView.classList.remove('hidden');
                 mainApp.classList.add('hidden');
-                userDisplay.innerText = "Authenticating...";
             }
         });
+
+        initAuth();
     </script>
 </body>
 </html>
