@@ -217,6 +217,27 @@
 
                 <div id="teacher-controls" class="hidden border-t border-slate-200 pt-6 mt-6 flex flex-col items-center gap-3">
                     <p class="text-slate-600 font-medium"><span id="student-count" class="font-bold text-indigo-600 text-lg">0</span> students joined</p>
+                    
+                    <!-- New Game Settings -->
+                    <div id="game-settings" class="w-full max-w-sm bg-white p-4 rounded-xl border border-slate-200 mb-2 shadow-sm text-left">
+                        <h4 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2">Round Settings</h4>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-600">Card 1 Questions:</label>
+                            <input type="number" id="setting-card1" value="1" min="1" class="w-16 p-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="text-xs font-semibold text-slate-600">Card 2 Questions:</label>
+                            <input type="number" id="setting-card2" value="2" min="1" class="w-16 p-1 text-center border border-slate-300 rounded text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold text-slate-600">Pass Direction:</label>
+                            <select id="setting-direction" class="p-1 border border-slate-300 rounded text-sm bg-white outline-none focus:border-indigo-500 text-center">
+                                <option value="1">Clockwise</option>
+                                <option value="-1">Counter-Clockwise</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="flex gap-2">
                         <button id="btn-start-game" onclick="actions.startGame()" class="bg-emerald-600 text-white font-bold px-6 py-2 rounded-full hover:bg-emerald-700 transition shadow-md">▶ Start Game</button>
                         <button id="btn-stop-game" onclick="actions.resetRound()" class="hidden bg-slate-200 text-slate-700 font-bold px-6 py-2 rounded-full hover:bg-slate-300 transition shadow-md">Stop Round</button>
@@ -413,6 +434,7 @@
                 const penaltyUI = document.getElementById('penalty-ui');
                 const btnStart = document.getElementById('btn-start-game');
                 const btnStop = document.getElementById('btn-stop-game');
+                const gameSettings = document.getElementById('game-settings');
                 
                 gameUI.classList.add('hidden');
                 penaltyUI.classList.add('hidden');
@@ -421,9 +443,11 @@
                     if (currentSessionData.status === 'playing') {
                         btnStart.classList.add('hidden');
                         btnStop.classList.remove('hidden');
+                        if (gameSettings) gameSettings.classList.add('hidden');
                     } else {
                         btnStart.classList.remove('hidden');
                         btnStop.classList.add('hidden');
+                        if (gameSettings) gameSettings.classList.remove('hidden');
                     }
                 }
                 
@@ -876,8 +900,12 @@
                 }
                 
                 const col = collectionsList.find(c => c.id === currentSessionData.collectionId);
-                if (!col || !col.questions || col.questions.length < 3) {
-                     return ui.notify("Your collection needs at least 3 questions to play!");
+                const c1Count = parseInt(document.getElementById('setting-card1').value) || 1;
+                const c2Count = parseInt(document.getElementById('setting-card2').value) || 2;
+                const passDir = parseInt(document.getElementById('setting-direction').value) || 1;
+
+                if (!col || !col.questions || col.questions.length < Math.max(c1Count, c2Count, 3)) {
+                     return ui.notify("Your collection needs more questions for this configuration!");
                 }
 
                 const students = currentSessionData.students;
@@ -888,9 +916,10 @@
                 const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
                 await updateDoc(sessionRef, {
                     status: 'playing',
+                    direction: passDir,
                     questionBank: col.questions,
-                    card1: { holder: students[idx1].id, questions: getRandomQuestions(col.questions, 1), progress: 0, total: 1 },
-                    card2: { holder: students[idx2].id, questions: getRandomQuestions(col.questions, 2), progress: 0, total: 2 },
+                    card1: { holder: students[idx1].id, questions: getRandomQuestions(col.questions, c1Count), progress: 0, total: c1Count },
+                    card2: { holder: students[idx2].id, questions: getRandomQuestions(col.questions, c2Count), progress: 0, total: c2Count },
                     penalty: null
                 });
             },
@@ -926,7 +955,12 @@
                     if (newProgress >= myCard.total) {
                         const students = currentSessionData.students;
                         const myIdx = students.findIndex(s => s.id === activeStudentId);
-                        const nextIdx = (myIdx + 1) % students.length;
+                        
+                        // Use the configured direction
+                        const dir = currentSessionData.direction || 1;
+                        let nextIdx = (myIdx + dir) % students.length;
+                        if (nextIdx < 0) nextIdx += students.length;
+                        
                         const nextStudentId = students[nextIdx].id;
                         
                         // Collision Check
@@ -951,6 +985,17 @@
                     const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
                     await updateDoc(sessionRef, updatePayload);
                 } else {
+                    // INCORRECT ANSWER: Replace question instantly
+                    const newQ = getRandomQuestions(currentSessionData.questionBank, 1)[0];
+                    const updatedQuestions = [...myCard.questions];
+                    updatedQuestions[myCard.progress] = newQ;
+                    
+                    const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                    await updateDoc(sessionRef, {
+                        [`${myCardId}.questions`]: updatedQuestions
+                    });
+                    
+                    feedbackEl.innerText = "Incorrect! New question loaded.";
                     feedbackEl.classList.remove('hidden');
                     setTimeout(() => feedbackEl.classList.add('hidden'), 2000);
                 }
@@ -967,6 +1012,7 @@
 
             if (user && !user.isAnonymous) {
                 // TEACHER VIEW
+                currentRole = 'teacher'; // FIX: Ensure role is maintained on page refresh
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 headerActions.classList.remove('hidden');
