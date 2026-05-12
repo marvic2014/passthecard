@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher's Collection Manager</title>
+    <title>EduCollector & Live Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
@@ -15,7 +15,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-800">
 
     <!-- Auth View -->
     <div id="view-auth" class="flex items-center justify-center min-h-screen p-4">
@@ -23,7 +23,7 @@
             <!-- Role Toggle -->
             <div class="flex mb-6 bg-slate-100 p-1 rounded-lg">
                 <button id="tab-student" onclick="authActions.switchRole('student')" class="flex-1 py-2 text-sm font-bold bg-white shadow-sm rounded-md text-indigo-700 transition">Student Join</button>
-                <button id="tab-teacher" onclick="authActions.switchRole('teacher')" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 rounded-md transition">Teacher Login</button>
+                <button id="tab-teacher" onclick="authActions.switchRole('teacher')" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-md transition">Teacher Login</button>
             </div>
 
             <!-- Student Join Form -->
@@ -94,14 +94,14 @@
 
         <!-- View: Manage Questions -->
         <section id="view-manage-questions" class="view hidden">
-            <div class="flex items-center justify-between mb-6 gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                 <div class="flex items-center gap-4">
                     <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition" title="Back to Dashboard">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                     </button>
                     <h2 id="active-collection-title" class="text-2xl font-bold text-slate-800">Questions</h2>
                 </div>
-                <button onclick="actions.startSession()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition flex items-center gap-2">
+                <button onclick="actions.startSession()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     Host Live Session
                 </button>
@@ -151,7 +151,7 @@
             </div>
         </section>
 
-        <!-- View: Active Session (Round Table) -->
+        <!-- View: Active Session (Round Table & Game UI) -->
         <section id="view-active-session" class="view hidden">
             <div class="glass-card p-8 rounded-2xl shadow-xl max-w-4xl mx-auto text-center relative overflow-hidden">
                 <button onclick="actions.leaveSession()" class="absolute top-4 left-4 p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-full transition flex items-center gap-2 text-sm font-medium">
@@ -159,12 +159,12 @@
                     Leave
                 </button>
                 
-                <h2 class="text-3xl font-bold text-slate-800 mb-2 mt-4 sm:mt-0">Live Session Table</h2>
+                <h2 class="text-3xl font-bold text-slate-800 mb-2 mt-10 sm:mt-0">Live Session Table</h2>
                 
                 <!-- Teacher's display: Show Code -->
                 <div id="teacher-code-display" class="hidden mb-8 mt-4">
                     <p class="text-slate-500 mb-2">Ask your students to join with this code:</p>
-                    <div class="inline-block bg-indigo-50 border-2 border-indigo-200 text-indigo-700 text-5xl font-mono font-bold tracking-[0.2em] px-10 py-4 rounded-xl shadow-inner">
+                    <div class="inline-block bg-indigo-50 border-2 border-indigo-200 text-indigo-700 text-4xl sm:text-5xl font-mono font-bold tracking-[0.2em] px-6 py-4 rounded-xl shadow-inner">
                         <span id="display-join-code">-----</span>
                     </div>
                 </div>
@@ -175,17 +175,43 @@
                 </div>
 
                 <!-- Round Table Visualization -->
-                <div class="relative w-72 h-72 sm:w-[400px] sm:h-[400px] mx-auto mt-12 mb-12">
+                <div class="relative w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] mx-auto mt-12 mb-12">
                     <!-- The Table Graphic -->
                     <div class="absolute inset-10 rounded-full bg-amber-700 border-[16px] border-amber-900 shadow-2xl flex items-center justify-center">
-                        <div class="text-amber-300 font-bold opacity-30 text-3xl rotate-[-15deg] pointer-events-none select-none">EduTable</div>
+                        <div class="text-amber-300 font-bold opacity-30 text-2xl sm:text-3xl rotate-[-15deg] pointer-events-none select-none">EduTable</div>
                     </div>
+                    
                     <!-- Students Container (Where avatars are injected) -->
                     <div id="students-table-container" class="absolute inset-0"></div>
+                    
+                    <!-- Game UI Overlay (Student Answers) -->
+                    <div id="game-ui" class="hidden absolute inset-0 bg-slate-900/90 z-30 flex items-center justify-center p-4 rounded-full backdrop-blur-sm shadow-2xl border-4 border-indigo-500 transition-all">
+                        <div class="bg-white p-5 rounded-2xl w-full max-w-[280px] shadow-2xl text-center transform scale-95 animate-in zoom-in duration-200">
+                            <div class="flex justify-between items-center mb-2">
+                                <span id="card-title" class="text-xs font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Card</span>
+                                <span id="card-progress" class="text-xs font-bold text-slate-500">0/1</span>
+                            </div>
+                            <p id="card-question" class="text-sm font-bold text-slate-800 mb-4 h-12 overflow-hidden flex items-center justify-center">Question?</p>
+                            <input type="text" id="card-answer" onkeydown="if(event.key === 'Enter') actions.submitAnswer()" placeholder="Your answer..." class="w-full p-2 border-2 border-slate-200 rounded-lg mb-2 text-center focus:border-indigo-500 outline-none text-sm font-medium">
+                            <button onclick="actions.submitAnswer()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm shadow">Submit</button>
+                            <p id="card-feedback" class="text-red-500 text-xs mt-2 hidden font-bold animate-pulse">Incorrect, try again!</p>
+                        </div>
+                    </div>
+
+                    <!-- Penalty Overlay (Everyone sees this when a collision happens) -->
+                    <div id="penalty-ui" class="hidden absolute inset-0 bg-red-600/95 z-40 flex flex-col items-center justify-center p-4 rounded-full backdrop-blur-md shadow-[0_0_50px_rgba(220,38,38,0.5)] border-8 border-red-500">
+                        <h2 class="text-3xl sm:text-4xl font-black text-white mb-2">💥 BOOM!</h2>
+                        <p id="penalty-message" class="text-sm text-red-100 font-bold mb-4 text-center leading-tight">Name was caught!</p>
+                        <button id="btn-reset-round" onclick="actions.resetRound()" class="hidden bg-white text-red-700 font-black px-6 py-2 rounded-full hover:bg-red-50 transition shadow-xl text-sm transform hover:scale-105">Reset Round</button>
+                    </div>
                 </div>
 
-                <div id="teacher-controls" class="hidden border-t border-slate-200 pt-6 mt-6">
-                    <p class="text-slate-600 font-medium mb-4"><span id="student-count" class="font-bold text-indigo-600 text-lg">0</span> students joined</p>
+                <div id="teacher-controls" class="hidden border-t border-slate-200 pt-6 mt-6 flex flex-col items-center gap-3">
+                    <p class="text-slate-600 font-medium"><span id="student-count" class="font-bold text-indigo-600 text-lg">0</span> students joined</p>
+                    <div class="flex gap-2">
+                        <button id="btn-start-game" onclick="actions.startGame()" class="bg-emerald-600 text-white font-bold px-6 py-2 rounded-full hover:bg-emerald-700 transition shadow-md">▶ Start Game</button>
+                        <button id="btn-stop-game" onclick="actions.resetRound()" class="hidden bg-slate-200 text-slate-700 font-bold px-6 py-2 rounded-full hover:bg-slate-300 transition shadow-md">Stop Round</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -212,7 +238,7 @@
             measurementId: "G-9K53RM40K9"
         };
         
-        // Use a static appId string to structure the database perfectly according to the rules
+        // Static appId to perfectly align with rules
         const dbAppId = "edu_app_1"; 
 
         const app = initializeApp(firebaseConfig);
@@ -223,11 +249,19 @@
         let collectionsList = [];
         let activeCollectionId = null;
         let isLoginMode = true;
-        let currentRole = 'student'; // 'student' or 'teacher'
+        let currentRole = 'student'; 
         let activeSessionCode = null;
         let activeStudentId = null;
-        let unsubscribeCollections = null; // To clean up listener on logout
-        let unsubscribeSession = null; // Real-time table updates
+        let unsubscribeCollections = null;
+        let unsubscribeSession = null;
+        let currentSessionData = null;
+
+        // Helper to get random questions from bank
+        function getRandomQuestions(bank, count) {
+            if (!bank || bank.length === 0) return [];
+            let shuffled = [...bank].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, Math.min(count, bank.length));
+        }
 
         // UI HELPERS
         const ui = {
@@ -266,10 +300,8 @@
                         </button>
                     `;
                     el.querySelector('.delete-btn').onclick = (e) => {
-                        e.stopPropagation(); // Prevents opening the collection when clicking delete
-                        if(confirm("Are you sure you want to delete this collection?")) {
-                            actions.deleteCollection(col.id);
-                        }
+                        e.stopPropagation(); // Stop opening collection
+                        actions.deleteCollection(col.id); // Direct delete for iframe safety
                     };
                     list.appendChild(el);
                 });
@@ -319,36 +351,92 @@
                 container.innerHTML = '';
                 document.getElementById('student-count').innerText = students.length;
 
-                // Radius of the circle where students sit
                 const radius = (container.offsetWidth / 2) - 24; 
                 
                 students.forEach((s, i) => {
-                    // Calculate angle for evenly spaced seating
                     const angle = (i / students.length) * 2 * Math.PI - (Math.PI / 2);
                     
                     const el = document.createElement('div');
-                    el.className = 'absolute w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-base font-bold transition-all duration-700 ease-out z-10';
+                    el.className = 'absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center text-white text-base font-bold transition-all duration-700 ease-out z-10';
                     
-                    // Highlight the current user differently
                     if (s.id === activeStudentId) {
                         el.classList.add('bg-emerald-500', 'border-4', 'border-white', 'ring-4', 'ring-emerald-200');
                     } else {
                         el.classList.add('bg-indigo-500', 'border-4', 'border-indigo-200');
                     }
 
-                    // Position using math relative to center
                     el.style.left = '50%';
                     el.style.top = '50%';
                     el.style.transform = `translate(-50%, -50%) translate(${radius * Math.cos(angle)}px, ${radius * Math.sin(angle)}px)`;
                     
-                    // Name label and initial
+                    let cardBadgeHTML = '';
+                    if (currentSessionData?.card1?.holder === s.id) {
+                        cardBadgeHTML += `<div class="absolute -top-3 -right-3 w-6 h-6 bg-amber-400 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xs font-black text-amber-900 z-20 animate-bounce">1</div>`;
+                    }
+                    if (currentSessionData?.card2?.holder === s.id) {
+                        cardBadgeHTML += `<div class="absolute -top-3 -left-3 w-6 h-6 bg-rose-400 rounded-full border-2 border-white shadow-md flex items-center justify-center text-xs font-black text-rose-900 z-20 animate-bounce">2</div>`;
+                    }
+
                     el.innerHTML = `
                         ${s.name.substring(0, 2).toUpperCase()}
-                        <span class="absolute -bottom-7 text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded shadow-md whitespace-nowrap pointer-events-none">${s.name}</span>
+                        ${cardBadgeHTML}
+                        <span class="absolute -bottom-7 text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded shadow-md whitespace-nowrap pointer-events-none z-30">${s.name}</span>
                     `;
                     
                     container.appendChild(el);
                 });
+            },
+            updateGameUI: () => {
+                if (!currentSessionData) return;
+                
+                const gameUI = document.getElementById('game-ui');
+                const penaltyUI = document.getElementById('penalty-ui');
+                const btnStart = document.getElementById('btn-start-game');
+                const btnStop = document.getElementById('btn-stop-game');
+                
+                gameUI.classList.add('hidden');
+                penaltyUI.classList.add('hidden');
+                
+                if (currentRole === 'teacher') {
+                    if (currentSessionData.status === 'playing') {
+                        btnStart.classList.add('hidden');
+                        btnStop.classList.remove('hidden');
+                    } else {
+                        btnStart.classList.remove('hidden');
+                        btnStop.classList.add('hidden');
+                    }
+                }
+                
+                if (currentSessionData.status === 'penalty') {
+                    penaltyUI.classList.remove('hidden');
+                    document.getElementById('penalty-message').innerText = `${currentSessionData.penalty.name}\nwas caught!`;
+                    if (currentRole === 'teacher') document.getElementById('btn-reset-round').classList.remove('hidden');
+                    else document.getElementById('btn-reset-round').classList.add('hidden');
+                    return;
+                }
+                
+                if (currentSessionData.status === 'playing' && activeStudentId) {
+                    let myCard = null;
+                    let cardLabel = "";
+                    if (currentSessionData.card1?.holder === activeStudentId) { 
+                        myCard = currentSessionData.card1; 
+                        cardLabel = "Card 1 (Fast)"; 
+                    } else if (currentSessionData.card2?.holder === activeStudentId) { 
+                        myCard = currentSessionData.card2; 
+                        cardLabel = "Card 2 (Slow)"; 
+                    }
+                    
+                    if (myCard && myCard.questions && myCard.questions.length > 0) {
+                        gameUI.classList.remove('hidden');
+                        document.getElementById('card-title').innerText = cardLabel;
+                        document.getElementById('card-progress').innerText = `${myCard.progress}/${myCard.total}`;
+                        
+                        const currentQ = myCard.questions[myCard.progress];
+                        if(currentQ) {
+                            document.getElementById('card-question').innerText = currentQ.text;
+                        }
+                    }
+                }
             }
         };
         window.ui = ui;
@@ -400,7 +488,7 @@
                     }
                 } catch (e) { 
                     console.error("Auth Error:", e);
-                    ui.notify(e.message.replace('Firebase:', '').trim()); 
+                    ui.notify("Authentication Failed."); 
                 } finally {
                     btn.disabled = false;
                     btn.innerText = isLoginMode ? 'Login' : 'Sign Up';
@@ -410,7 +498,9 @@
                 try {
                     await signOut(auth);
                     if (unsubscribeCollections) unsubscribeCollections();
+                    if (unsubscribeSession) unsubscribeSession();
                     collectionsList = [];
+                    currentSessionData = null;
                     ui.notify("Logged out successfully");
                 } catch(e) {
                     ui.notify("Logout failed");
@@ -432,7 +522,6 @@
                     btn.innerText = "Saving...";
                     const id = Date.now().toString();
                     
-                    // FIRESTORE PATH MATCHING RULES: /artifacts/{dbAppId}/users/{userId}/collections/{docId}
                     const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', id);
                     
                     await setDoc(colRef, {
@@ -446,7 +535,7 @@
                     ui.showView('dashboard');
                     document.getElementById('new-col-title').value = '';
                     document.getElementById('new-col-subject').value = '';
-                    ui.notify("Collection Saved Successfully!");
+                    ui.notify("Collection Saved!");
                 } catch (e) {
                     console.error("Firestore Save Error:", e);
                     ui.notify("Failed to save. Check security rules.");
@@ -461,7 +550,6 @@
                     const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', id);
                     await deleteDoc(colRef);
                     
-                    // If we deleted the active collection, go back to dashboard
                     if(activeCollectionId === id) {
                         activeCollectionId = null;
                         ui.showView('dashboard');
@@ -476,7 +564,7 @@
                 if (!currentUser || !activeCollectionId) return;
                 const text = document.getElementById('q-text').value.trim();
                 const answer = document.getElementById('q-answer').value.trim();
-                if (!text || !answer) return ui.notify("Please fill in both the question and answer.");
+                if (!text || !answer) return ui.notify("Please fill in both fields.");
 
                 try {
                     const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', activeCollectionId);
@@ -525,25 +613,23 @@
                             await updateDoc(colRef, { questions: arrayUnion(...newQs) });
                             ui.notify(`Successfully imported ${newQs.length} questions.`);
                         } catch(err) {
-                            ui.notify("Error uploading questions to database.");
+                            ui.notify("Error uploading questions.");
                         }
                     } else {
-                        ui.notify("No valid questions found in CSV.");
+                        ui.notify("No valid questions found.");
                     }
-                    event.target.value = ''; // Reset file input
+                    event.target.value = '';
                 };
                 reader.readAsText(file);
             },
             
-            // --- LIVE SESSION LOGIC ---
+            // --- LIVE SESSION & GAME LOGIC ---
             startSession: async () => {
                 if (!currentUser || !activeCollectionId) return;
                 
-                // Generate a random 5 character uppercase code
                 const code = Math.random().toString(36).substr(2, 5).toUpperCase();
                 
                 try {
-                    // Uses the PUBLIC path
                     const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', code);
                     await setDoc(sessionRef, {
                         code: code,
@@ -557,25 +643,25 @@
                     activeSessionCode = code;
                     document.getElementById('display-join-code').innerText = code;
                     
-                    // UI toggles for Teacher Host
                     document.getElementById('teacher-code-display').classList.remove('hidden');
                     document.getElementById('teacher-controls').classList.remove('hidden');
                     document.getElementById('student-waiting-display').classList.add('hidden');
                     
                     ui.showView('active-session');
                     
-                    // Real-time listener for joining students
                     if(unsubscribeSession) unsubscribeSession();
                     unsubscribeSession = onSnapshot(sessionRef, (snap) => {
                         if(snap.exists()) {
-                            ui.renderTable(snap.data().students || []);
+                            currentSessionData = snap.data();
+                            ui.renderTable(currentSessionData.students || []);
+                            ui.updateGameUI();
                         }
                     });
                     
                     ui.notify("Session started! Share code with students.");
                 } catch(err) {
                     console.error("Session Start Error:", err);
-                    ui.notify("Failed to start session. Did you update the Firebase rules?");
+                    ui.notify("Failed to start session. Check your Firebase Rules.");
                 }
             },
             
@@ -585,7 +671,6 @@
                 
                 if (!code || !name) return ui.notify("Please enter both the code and your name.");
                 
-                // 1. Authenticate anonymously if not logged in
                 if (!currentUser) {
                     try {
                         await signInAnonymously(auth);
@@ -602,15 +687,13 @@
                         return ui.notify("Session not found. Check code.");
                     }
                     
-                    // 2. Add student to session
-                    activeStudentId = currentUser.uid;
+                    activeStudentId = auth.currentUser.uid;
                     const studentData = { id: activeStudentId, name: name };
                     
                     await updateDoc(sessionRef, {
                         students: arrayUnion(studentData)
                     });
 
-                    // 3. Setup UI for Student
                     activeSessionCode = code;
                     document.getElementById('teacher-code-display').classList.add('hidden');
                     document.getElementById('teacher-controls').classList.add('hidden');
@@ -618,14 +701,14 @@
                     
                     ui.showView('active-session');
                     
-                    // 4. Listen to table updates
                     if(unsubscribeSession) unsubscribeSession();
                     unsubscribeSession = onSnapshot(sessionRef, (snap) => {
                         if(snap.exists()) {
-                            ui.renderTable(snap.data().students || []);
+                            currentSessionData = snap.data();
+                            ui.renderTable(currentSessionData.students || []);
+                            ui.updateGameUI();
                             
-                            // Check if teacher kicked us or ended session
-                            if(snap.data().status === 'finished') {
+                            if(currentSessionData.status === 'finished') {
                                 ui.notify("Session ended by teacher.");
                                 actions.leaveSession();
                             }
@@ -649,12 +732,10 @@
                         const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
                         
                         if (currentRole === 'teacher') {
-                            // Teacher deletes the whole session
                             await deleteDoc(sessionRef);
                             ui.showView('manage-questions');
                             ui.notify("Session ended.");
                         } else {
-                            // Student removes only themselves
                             if (activeStudentId) {
                                 const snap = await getDoc(sessionRef);
                                 if(snap.exists()) {
@@ -662,7 +743,6 @@
                                     if(me) await updateDoc(sessionRef, { students: arrayRemove(me) });
                                 }
                             }
-                            // Sign out anonymous user and reset to landing
                             await signOut(auth);
                             ui.showView('auth');
                             ui.notify("You left the table.");
@@ -673,6 +753,93 @@
                 }
                 activeSessionCode = null;
                 activeStudentId = null;
+                currentSessionData = null;
+            },
+
+            startGame: async () => {
+                if (!currentSessionData || currentSessionData.students.length < 2) {
+                    return ui.notify("Need at least 2 students to start!");
+                }
+                
+                const col = collectionsList.find(c => c.id === currentSessionData.collectionId);
+                if (!col || !col.questions || col.questions.length < 3) {
+                     return ui.notify("Your collection needs at least 3 questions to play!");
+                }
+
+                const students = currentSessionData.students;
+                let idx1 = Math.floor(Math.random() * students.length);
+                let idx2 = Math.floor(Math.random() * students.length);
+                while(idx1 === idx2) idx2 = Math.floor(Math.random() * students.length);
+
+                const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                await updateDoc(sessionRef, {
+                    status: 'playing',
+                    questionBank: col.questions,
+                    card1: { holder: students[idx1].id, questions: getRandomQuestions(col.questions, 1), progress: 0, total: 1 },
+                    card2: { holder: students[idx2].id, questions: getRandomQuestions(col.questions, 2), progress: 0, total: 2 },
+                    penalty: null
+                });
+            },
+            
+            resetRound: async () => {
+                if (!activeSessionCode) return;
+                const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                await updateDoc(sessionRef, { status: 'waiting', penalty: null, card1: null, card2: null });
+            },
+
+            submitAnswer: async () => {
+                if (!activeStudentId || !currentSessionData || currentSessionData.status !== 'playing') return;
+                
+                let myCardId = null;
+                let myCard = null;
+                if (currentSessionData.card1?.holder === activeStudentId) { myCardId = 'card1'; myCard = currentSessionData.card1; }
+                else if (currentSessionData.card2?.holder === activeStudentId) { myCardId = 'card2'; myCard = currentSessionData.card2; }
+                
+                if (!myCard) return;
+
+                const inputEl = document.getElementById('card-answer');
+                const feedbackEl = document.getElementById('card-feedback');
+                const answerVal = inputEl.value.trim().toLowerCase();
+                const currentQ = myCard.questions[myCard.progress];
+                
+                if (answerVal === currentQ.answer.trim().toLowerCase()) {
+                    feedbackEl.classList.add('hidden');
+                    inputEl.value = '';
+                    
+                    let newProgress = myCard.progress + 1;
+                    let updatePayload = {};
+                    
+                    if (newProgress >= myCard.total) {
+                        const students = currentSessionData.students;
+                        const myIdx = students.findIndex(s => s.id === activeStudentId);
+                        const nextIdx = (myIdx + 1) % students.length;
+                        const nextStudentId = students[nextIdx].id;
+                        
+                        // Collision Check
+                        const otherCardId = myCardId === 'card1' ? 'card2' : 'card1';
+                        const otherCard = currentSessionData[otherCardId];
+                        
+                        if (otherCard && otherCard.holder === nextStudentId) {
+                            updatePayload = {
+                                status: 'penalty',
+                                penalty: { studentId: nextStudentId, name: students[nextIdx].name }
+                            };
+                        } else {
+                            // Pass safely
+                            updatePayload[`${myCardId}.holder`] = nextStudentId;
+                            updatePayload[`${myCardId}.progress`] = 0;
+                            updatePayload[`${myCardId}.questions`] = getRandomQuestions(currentSessionData.questionBank, myCard.total);
+                        }
+                    } else {
+                        updatePayload[`${myCardId}.progress`] = newProgress;
+                    }
+                    
+                    const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                    await updateDoc(sessionRef, updatePayload);
+                } else {
+                    feedbackEl.classList.remove('hidden');
+                    setTimeout(() => feedbackEl.classList.add('hidden'), 2000);
+                }
             }
         };
 
@@ -685,10 +852,9 @@
             const headerActions = document.getElementById('header-actions');
 
             if (user && !user.isAnonymous) {
-                // TEACHER: Authenticated with Email/Pass
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
-                headerActions.classList.remove('hidden'); // Show New Col/Logout
+                headerActions.classList.remove('hidden');
                 userDisplay.innerHTML = `<span class="font-semibold text-indigo-600">Teacher: ${user.email}</span>`;
                 
                 const colPath = collection(db, 'artifacts', dbAppId, 'users', user.uid, 'collections');
@@ -697,13 +863,11 @@
                     collectionsList = snap.docs.map(d => d.data());
                     ui.renderCollections(collectionsList);
                     
-                    // Live-update the questions view if we are currently inside a collection
                     if (activeCollectionId) {
                         const active = collectionsList.find(c => c.id === activeCollectionId);
                         if (active) {
                             ui.renderQuestions(active.questions || []);
                         } else {
-                            // Only force redirect if we aren't busy hosting a session
                             if (!activeSessionCode) {
                                 ui.showView('dashboard');
                                 activeCollectionId = null;
@@ -716,20 +880,18 @@
                 });
                 
             } else if (user && user.isAnonymous && currentRole === 'student') {
-                 // STUDENT: Joined via code. Keep main app visible but hide teacher header actions
                  authView.classList.add('hidden');
                  mainApp.classList.remove('hidden');
                  headerActions.classList.add('hidden');
                  userDisplay.innerHTML = `<span class="font-semibold text-emerald-600 flex items-center gap-2"><div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live Student Mode</span>`;
                  
             } else {
-                // LOGGED OUT completely
                 authView.classList.remove('hidden');
                 mainApp.classList.add('hidden');
-                headerActions.classList.remove('hidden'); // Reset for next login
+                headerActions.classList.remove('hidden');
                 userDisplay.innerText = "Authenticating...";
                 document.getElementById('auth-password').value = '';
-                if (!activeSessionCode) ui.showView('dashboard'); // reset state safely
+                if (!activeSessionCode) ui.showView('dashboard');
             }
         });
 
