@@ -201,7 +201,7 @@
                                 <span id="card-progress" class="text-xs font-bold text-slate-500">0/1</span>
                             </div>
                             <p id="card-question" class="text-sm font-bold text-slate-800 mb-4 h-12 overflow-hidden flex items-center justify-center">Question?</p>
-                            <input type="text" id="card-answer" onkeydown="if(event.key === 'Enter') actions.submitAnswer()" placeholder="Your answer..." class="w-full p-2 border-2 border-slate-200 rounded-lg mb-2 text-center focus:border-indigo-500 outline-none text-sm font-medium">
+                            <input type="text" id="card-answer" autocomplete="off" onkeydown="if(event.key === 'Enter') actions.submitAnswer()" placeholder="Your answer..." class="w-full p-2 border-2 border-slate-200 rounded-lg mb-2 text-center focus:border-indigo-500 outline-none text-sm font-medium">
                             <button onclick="actions.submitAnswer()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm shadow">Submit</button>
                             <p id="card-feedback" class="text-red-500 text-xs mt-2 hidden font-bold animate-pulse">Incorrect, try again!</p>
                         </div>
@@ -741,12 +741,19 @@
                 
                 if (!code || !name) return ui.notify("Please enter both the code and your name.");
                 
-                if (!currentUser) {
-                    try {
+                // Pre-emptively hold the code so the "ghost cleanup" trap doesn't hit
+                const prevCode = activeSessionCode;
+                activeSessionCode = code; 
+
+                try {
+                    // Force clean slate for students
+                    if (!auth.currentUser || !auth.currentUser.isAnonymous) {
+                        if (auth.currentUser) await signOut(auth);
                         await signInAnonymously(auth);
-                    } catch(e) {
-                        return ui.notify("Connection error joining session.");
                     }
+                } catch(e) {
+                    activeSessionCode = prevCode; // Revert
+                    return ui.notify("Connection error joining session.");
                 }
 
                 try {
@@ -754,6 +761,7 @@
                     const snap = await getDoc(sessionRef);
                     
                     if (!snap.exists()) {
+                        activeSessionCode = prevCode; // Revert
                         return ui.notify("Session not found. Check code.");
                     }
                     
@@ -764,7 +772,6 @@
                         students: arrayUnion(studentData)
                     });
 
-                    activeSessionCode = code;
                     document.getElementById('txt-leave-session').innerText = "Leave Table";
                     document.getElementById('teacher-code-display').classList.add('hidden');
                     document.getElementById('teacher-controls').classList.add('hidden');
@@ -793,6 +800,7 @@
                     
                 } catch(err) {
                     console.error("Join Error:", err);
+                    activeSessionCode = prevCode;
                     ui.notify("Error joining session.");
                 }
             },
