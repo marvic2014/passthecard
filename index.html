@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher's Collection Manager (Cloud)</title>
+    <title>Teacher's Collection Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -23,9 +23,9 @@
             <h2 id="auth-title" class="text-2xl font-bold text-slate-800 mb-2">Teacher Login</h2>
             <p id="auth-subtitle" class="text-slate-500 mb-6 text-sm">Sign in to manage your question collections.</p>
             <div class="space-y-4">
-                <input type="email" id="auth-email" placeholder="Email" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="password" id="auth-password" placeholder="Password" class="w-full p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
-                <button id="btn-auth-primary" onclick="authActions.handleAuth()" class="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Login</button>
+                <input type="email" id="auth-email" placeholder="Email Address" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="auth-password" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                <button id="btn-auth-primary" onclick="authActions.handleAuth()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">Login</button>
                 <div class="text-center mt-4">
                     <button onclick="authActions.toggleMode()" id="btn-auth-toggle" class="text-sm text-indigo-600 hover:underline">Need an account? Sign Up</button>
                 </div>
@@ -38,20 +38,20 @@
         <header class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800">EduCollector</h1>
-                <p id="user-display" class="text-slate-500 text-sm italic">Authenticating...</p>
+                <p id="user-display" class="text-slate-500 text-sm">Authenticating...</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <button onclick="ui.showView('dashboard')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">My Collections</button>
-                <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">+ New Collection</button>
+                <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm">+ New Collection</button>
                 <button onclick="authActions.logout()" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Logout</button>
             </div>
         </header>
 
         <!-- View: Dashboard -->
         <section id="view-dashboard" class="view">
-            <div id="collections-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="collections-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             <div id="empty-state" class="hidden text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
-                <p class="text-slate-400">No collections found. Create your first one!</p>
+                <p class="text-slate-400">No collections found. Click '+ New Collection' to start!</p>
             </div>
         </section>
 
@@ -60,11 +60,17 @@
             <div class="glass-card p-6 rounded-2xl shadow-xl">
                 <h2 class="text-xl font-bold mb-4">Create New Collection</h2>
                 <div class="space-y-4">
-                    <input type="text" id="new-col-title" placeholder="Collection Title" class="w-full p-2 border border-slate-300 rounded-lg">
-                    <input type="text" id="new-col-subject" placeholder="Subject" class="w-full p-2 border border-slate-300 rounded-lg">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Title</label>
+                        <input type="text" id="new-col-title" placeholder="e.g., Chapter 1: The Cell" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Subject</label>
+                        <input type="text" id="new-col-subject" placeholder="e.g., Biology" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
                     <div class="flex gap-2 pt-4">
-                        <button id="btn-save-col" onclick="actions.saveCollection()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium disabled:bg-indigo-300">Save Collection</button>
-                        <button onclick="ui.showView('dashboard')" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-lg font-medium">Cancel</button>
+                        <button id="btn-save-col" onclick="actions.saveCollection()" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition disabled:opacity-50">Save Collection</button>
+                        <button onclick="ui.showView('dashboard')" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-lg font-medium hover:bg-slate-200 transition">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -73,67 +79,98 @@
         <!-- View: Manage Questions -->
         <section id="view-manage-questions" class="view hidden">
             <div class="flex items-center mb-6 gap-4">
-                <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition">
+                <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition" title="Back to Dashboard">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                 </button>
                 <h2 id="active-collection-title" class="text-2xl font-bold text-slate-800">Questions</h2>
             </div>
+            
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Sidebar -->
                 <div class="lg:col-span-1 space-y-6">
-                    <div class="glass-card p-6 rounded-xl shadow-md">
-                        <h3 class="font-semibold mb-4">Add Question</h3>
-                        <textarea id="q-text" placeholder="Question Text" rows="3" class="w-full p-2 border border-slate-300 rounded-lg text-sm mb-4"></textarea>
-                        <input type="text" id="q-answer" placeholder="Correct Answer" class="w-full p-2 border border-slate-300 rounded-lg text-sm mb-4">
-                        <button onclick="actions.addQuestionManual()" class="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium">Add to List</button>
+                    <div class="glass-card p-6 rounded-xl shadow-md border border-slate-200">
+                        <h3 class="font-semibold mb-4 text-slate-800">Add Question Manually</h3>
+                        <div class="space-y-4">
+                            <textarea id="q-text" placeholder="Type your question here..." rows="3" class="w-full p-3 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                            <input type="text" id="q-answer" placeholder="Correct Answer" class="w-full p-3 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button onclick="actions.addQuestionManual()" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">Add to List</button>
+                        </div>
                     </div>
-                    <div class="glass-card p-6 rounded-xl bg-indigo-50/30">
-                        <h3 class="font-semibold mb-2">Bulk Import</h3>
+                    
+                    <div class="glass-card p-6 rounded-xl border border-indigo-100 bg-indigo-50/50">
+                        <h3 class="font-semibold mb-2 text-indigo-900">Bulk Import</h3>
+                        <p class="text-xs text-indigo-600 mb-4">Upload a .csv file structured as <br><code>Question,Answer</code></p>
                         <input type="file" id="csv-file" accept=".csv" class="hidden" onchange="actions.handleCSVUpload(event)">
-                        <button onclick="document.getElementById('csv-file').click()" class="w-full bg-white border border-slate-300 text-slate-700 py-2 rounded-lg text-sm">Upload CSV</button>
+                        <button onclick="document.getElementById('csv-file').click()" class="w-full bg-white border border-indigo-200 text-indigo-700 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-50 transition shadow-sm">Choose CSV File</button>
                     </div>
                 </div>
+                
+                <!-- Right Content -->
                 <div class="lg:col-span-2">
-                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
-                                <tr><th class="px-6 py-4">Question & Answer</th><th class="px-6 py-4 text-right">Action</th></tr>
-                            </thead>
-                            <tbody id="questions-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
-                        </table>
-                        <div id="questions-empty" class="p-12 text-center text-slate-400">No questions yet.</div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left min-w-[500px]">
+                                <thead class="bg-slate-50 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-6 py-4 w-12">#</th>
+                                        <th class="px-6 py-4">Question & Answer</th>
+                                        <th class="px-6 py-4 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="questions-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                            </table>
+                        </div>
+                        <div id="questions-empty" class="p-12 text-center text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-3 opacity-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="9" x2="15" y1="9" y2="9"/><line x1="9" x2="15" y1="15" y2="15"/></svg>
+                            This collection is empty.
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
     </div>
 
-    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl transition-transform translate-y-24 pointer-events-none opacity-0 z-50"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-6 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-24 opacity-0 z-50 flex items-center gap-2">
+        <span id="toast-msg">Notification</span>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Environment globals
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // EXPLICIT CONFIG: Your provided Firebase Credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyBGDOTODDO5-yWRx09f3Q--0J9HHNNbYWs",
+            authDomain: "pass-the-cards.firebaseapp.com",
+            projectId: "pass-the-cards",
+            storageBucket: "pass-the-cards.firebasestorage.app",
+            messagingSenderId: "376596807086",
+            appId: "1:376596807086:web:5b3e89a93c7257b9b75c3f",
+            measurementId: "G-9K53RM40K9"
+        };
+        
+        // Use a static appId string to structure the database perfectly according to the rules
+        const dbAppId = "edu_app_1"; 
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         let currentUser = null;
-        let collections = [];
+        let collectionsList = [];
         let activeCollectionId = null;
         let isLoginMode = true;
+        let unsubscribeCollections = null; // To clean up listener on logout
 
         // UI HELPERS
         const ui = {
             notify: (msg) => {
                 const t = document.getElementById('toast');
-                t.innerText = msg;
+                document.getElementById('toast-msg').innerText = msg;
                 t.classList.remove('translate-y-24', 'opacity-0');
-                setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3000);
+                setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 3500);
             },
             showView: (name) => {
                 document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -143,28 +180,38 @@
                 const list = document.getElementById('collections-list');
                 const empty = document.getElementById('empty-state');
                 list.innerHTML = '';
-                if (data.length === 0) return empty.classList.remove('hidden');
+                
+                if (data.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
                 empty.classList.add('hidden');
-
                 data.forEach(col => {
                     const el = document.createElement('div');
-                    el.className = "glass-card p-6 rounded-xl hover:shadow-lg cursor-pointer transition relative group";
+                    el.className = "glass-card p-6 rounded-xl hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer relative group flex flex-col justify-between min-h-[160px]";
                     el.innerHTML = `
-                        <div onclick="ui.openCollection('${col.id}')">
-                            <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">${col.subject || 'General'}</span>
-                            <h3 class="text-xl font-bold mt-2">${col.title}</h3>
-                            <p class="text-sm text-slate-500">${col.questions?.length || 0} Questions</p>
+                        <div onclick="ui.openCollection('${col.id}')" class="h-full">
+                            <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-md mb-3">${col.subject || 'General'}</span>
+                            <h3 class="text-xl font-bold text-slate-800 leading-tight mb-2 pr-6">${col.title}</h3>
+                            <p class="text-sm text-slate-500 font-medium">${col.questions?.length || 0} Questions</p>
                         </div>
-                        <button onclick="actions.deleteCollection('${col.id}')" class="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
+                        <button class="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all delete-btn" title="Delete Collection">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                         </button>
                     `;
+                    el.querySelector('.delete-btn').onclick = (e) => {
+                        e.stopPropagation(); // Prevents opening the collection when clicking delete
+                        if(confirm("Are you sure you want to delete this collection?")) {
+                            actions.deleteCollection(col.id);
+                        }
+                    };
                     list.appendChild(el);
                 });
             },
             openCollection: (id) => {
                 activeCollectionId = id;
-                const col = collections.find(c => c.id === id);
+                const col = collectionsList.find(c => c.id === id);
                 if (!col) return;
                 document.getElementById('active-collection-title').innerText = col.title;
                 ui.showView('manage-questions');
@@ -174,23 +221,31 @@
                 const tbody = document.getElementById('questions-table-body');
                 const empty = document.getElementById('questions-empty');
                 tbody.innerHTML = '';
-                if (qs.length === 0) return empty.classList.remove('hidden');
+                
+                if (qs.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                
                 empty.classList.add('hidden');
-
-                qs.forEach(q => {
+                qs.forEach((q, index) => {
                     const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-50 transition-colors";
                     row.innerHTML = `
+                        <td class="px-6 py-4 text-slate-400 font-mono text-xs">${index + 1}</td>
                         <td class="px-6 py-4">
-                            <p class="font-medium text-slate-700">${q.text}</p>
-                            <p class="text-xs text-emerald-600 mt-1">Answer: ${q.answer}</p>
+                            <p class="font-medium text-slate-800">${q.text}</p>
+                            <div class="mt-1 flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 w-max px-2 py-0.5 rounded border border-emerald-100">
+                                <span class="font-bold">A:</span> ${q.answer}
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <button class="text-slate-300 hover:text-red-500">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            <button class="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors remove-q-btn" title="Remove Question">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                             </button>
                         </td>
                     `;
-                    row.querySelector('button').onclick = () => actions.removeQuestion(q);
+                    row.querySelector('.remove-q-btn').onclick = () => actions.removeQuestion(q);
                     tbody.appendChild(row);
                 });
             }
@@ -202,40 +257,63 @@
             toggleMode: () => {
                 isLoginMode = !isLoginMode;
                 document.getElementById('auth-title').innerText = isLoginMode ? 'Teacher Login' : 'Create Teacher Account';
+                document.getElementById('auth-subtitle').innerText = isLoginMode ? 'Sign in to manage your question collections.' : 'Register below to start building your database.';
                 document.getElementById('btn-auth-primary').innerText = isLoginMode ? 'Login' : 'Sign Up';
                 document.getElementById('btn-auth-toggle').innerText = isLoginMode ? 'Need an account? Sign Up' : 'Already have an account? Login';
             },
             handleAuth: async () => {
                 const email = document.getElementById('auth-email').value.trim();
                 const pass = document.getElementById('auth-password').value.trim();
-                if (!email || !pass) return ui.notify("Email and password required");
+                const btn = document.getElementById('btn-auth-primary');
+
+                if (!email || !pass) return ui.notify("Please enter both email and password.");
 
                 try {
+                    btn.disabled = true;
+                    btn.innerText = "Processing...";
                     if (isLoginMode) {
                         await signInWithEmailAndPassword(auth, email, pass);
+                        ui.notify("Login Successful!");
                     } else {
                         await createUserWithEmailAndPassword(auth, email, pass);
+                        ui.notify("Account Created Successfully!");
                     }
-                    ui.notify("Success!");
-                } catch (e) { ui.notify(e.message); }
+                } catch (e) { 
+                    console.error("Auth Error:", e);
+                    ui.notify(e.message.replace('Firebase:', '').trim()); 
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = isLoginMode ? 'Login' : 'Sign Up';
+                }
             },
-            logout: () => signOut(auth)
+            logout: async () => {
+                try {
+                    await signOut(auth);
+                    if (unsubscribeCollections) unsubscribeCollections();
+                    collectionsList = [];
+                    ui.notify("Logged out successfully");
+                } catch(e) {
+                    ui.notify("Logout failed");
+                }
+            }
         };
 
         window.actions = {
             saveCollection: async () => {
-                if (!currentUser) return ui.notify("Auth error: User not ready");
+                if (!currentUser) return ui.notify("Error: Not logged in.");
                 const title = document.getElementById('new-col-title').value.trim();
                 const subject = document.getElementById('new-col-subject').value.trim();
                 const btn = document.getElementById('btn-save-col');
                 
-                if (!title) return ui.notify("Title required");
+                if (!title) return ui.notify("Please enter a collection title.");
 
                 try {
                     btn.disabled = true;
                     btn.innerText = "Saving...";
                     const id = Date.now().toString();
-                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id);
+                    
+                    // FIRESTORE PATH MATCHING RULES: /artifacts/{dbAppId}/users/{userId}/collections/{docId}
+                    const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', id);
                     
                     await setDoc(colRef, {
                         id,
@@ -248,9 +326,10 @@
                     ui.showView('dashboard');
                     document.getElementById('new-col-title').value = '';
                     document.getElementById('new-col-subject').value = '';
-                    ui.notify("Collection Saved!");
+                    ui.notify("Collection Saved Successfully!");
                 } catch (e) {
-                    ui.notify("Error: " + e.message);
+                    console.error("Firestore Save Error:", e);
+                    ui.notify("Failed to save. Check security rules.");
                 } finally {
                     btn.disabled = false;
                     btn.innerText = "Save Collection";
@@ -259,66 +338,85 @@
             deleteCollection: async (id) => {
                 if (!currentUser) return;
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', id));
-                } catch (e) { ui.notify(e.message); }
+                    const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', id);
+                    await deleteDoc(colRef);
+                    
+                    // If we deleted the active collection, go back to dashboard
+                    if(activeCollectionId === id) {
+                        activeCollectionId = null;
+                        ui.showView('dashboard');
+                    }
+                    ui.notify("Collection deleted");
+                } catch (e) { 
+                    console.error("Delete Error:", e);
+                    ui.notify("Failed to delete collection."); 
+                }
             },
             addQuestionManual: async () => {
                 if (!currentUser || !activeCollectionId) return;
                 const text = document.getElementById('q-text').value.trim();
                 const answer = document.getElementById('q-answer').value.trim();
-                if (!text || !answer) return ui.notify("Fields required");
+                if (!text || !answer) return ui.notify("Please fill in both the question and answer.");
 
                 try {
-                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                    const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', activeCollectionId);
                     await updateDoc(colRef, {
                         questions: arrayUnion({ id: Date.now().toString(), text, answer })
                     });
                     document.getElementById('q-text').value = '';
                     document.getElementById('q-answer').value = '';
-                } catch (e) { ui.notify(e.message); }
+                    ui.notify("Question added!");
+                } catch (e) { 
+                    ui.notify("Error adding question."); 
+                }
             },
             removeQuestion: async (q) => {
                 if (!currentUser || !activeCollectionId) return;
                 try {
-                    const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                    const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', activeCollectionId);
                     await updateDoc(colRef, { questions: arrayRemove(q) });
-                } catch (e) { ui.notify(e.message); }
+                    ui.notify("Question removed.");
+                } catch (e) { 
+                    ui.notify("Error removing question."); 
+                }
             },
             handleCSVUpload: (event) => {
                 const file = event.target.files[0];
                 if (!file || !currentUser || !activeCollectionId) return;
+                
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     const lines = e.target.result.split(/\r?\n/);
                     const newQs = [];
                     lines.forEach(line => {
-                        const p = line.split(',');
-                        if (p.length >= 2) newQs.push({ id: Math.random().toString(36).substr(2, 9), text: p[0].trim(), answer: p.slice(1).join(',').trim() });
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            newQs.push({ 
+                                id: Math.random().toString(36).substr(2, 9), 
+                                text: parts[0].trim(), 
+                                answer: parts.slice(1).join(',').trim() 
+                            });
+                        }
                     });
+                    
                     if (newQs.length > 0) {
-                        const colRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'collections', activeCollectionId);
-                        await updateDoc(colRef, { questions: arrayUnion(...newQs) });
-                        ui.notify(`Imported ${newQs.length} questions`);
+                        try {
+                            const colRef = doc(db, 'artifacts', dbAppId, 'users', currentUser.uid, 'collections', activeCollectionId);
+                            await updateDoc(colRef, { questions: arrayUnion(...newQs) });
+                            ui.notify(`Successfully imported ${newQs.length} questions.`);
+                        } catch(err) {
+                            ui.notify("Error uploading questions to database.");
+                        }
+                    } else {
+                        ui.notify("No valid questions found in CSV.");
                     }
+                    event.target.value = ''; // Reset file input
                 };
                 reader.readAsText(file);
             }
         };
 
-        // AUTH INITIALIZATION (MANDATORY PATTERN)
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    // Fallback if no token is provided yet
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.error("Auth init failed", err);
-            }
-        };
-
+        // AUTH LISTENER
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             const authView = document.getElementById('view-auth');
@@ -326,26 +424,44 @@
             const userDisplay = document.getElementById('user-display');
 
             if (user) {
+                // User is signed in
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
-                userDisplay.innerText = `Teacher ID: ${user.uid}`;
+                userDisplay.innerHTML = `<span class="font-semibold text-indigo-600">${user.email}</span>`;
                 
-                const colPath = collection(db, 'artifacts', appId, 'users', user.uid, 'collections');
-                onSnapshot(colPath, (snap) => {
-                    collections = snap.docs.map(d => d.data());
-                    ui.renderCollections(collections);
+                // Set up the listener for this specific user's collections
+                const colPath = collection(db, 'artifacts', dbAppId, 'users', user.uid, 'collections');
+                
+                unsubscribeCollections = onSnapshot(colPath, (snap) => {
+                    collectionsList = snap.docs.map(d => d.data());
+                    ui.renderCollections(collectionsList);
+                    
+                    // Live-update the questions view if we are currently inside a collection
                     if (activeCollectionId) {
-                        const active = collections.find(c => c.id === activeCollectionId);
-                        if (active) ui.renderQuestions(active.questions || []);
+                        const active = collectionsList.find(c => c.id === activeCollectionId);
+                        if (active) {
+                            ui.renderQuestions(active.questions || []);
+                        } else {
+                            // Collection was deleted while we were viewing it
+                            ui.showView('dashboard');
+                            activeCollectionId = null;
+                        }
                     }
-                }, (err) => ui.notify("Sync Error: " + err.message));
+                }, (err) => {
+                    console.error("Firestore Sync Error:", err);
+                    ui.notify("Database connection issue. Check console.");
+                });
+                
             } else {
+                // User is signed out
                 authView.classList.remove('hidden');
                 mainApp.classList.add('hidden');
+                userDisplay.innerText = "Authenticating...";
+                document.getElementById('auth-password').value = '';
+                ui.showView('dashboard'); // reset view state
             }
         });
 
-        initAuth();
     </script>
 </body>
 </html>
