@@ -56,7 +56,11 @@
                 <h1 class="text-3xl font-bold text-slate-800">EduCollector</h1>
                 <p id="user-display" class="text-slate-500 text-sm">Authenticating...</p>
             </div>
-            <div id="header-actions" class="flex flex-wrap gap-2">
+            <div id="header-actions" class="flex flex-wrap items-center gap-2">
+                <!-- Teacher's Session Management Indicator -->
+                <button id="btn-active-session" onclick="actions.returnToSession()" class="hidden px-4 py-2 text-sm font-bold bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition shadow-sm animate-pulse border border-emerald-300 mr-2">
+                    🟢 Active Session
+                </button>
                 <button onclick="ui.showView('dashboard')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">My Collections</button>
                 <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm">+ New Collection</button>
                 <button onclick="authActions.logout()" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Logout</button>
@@ -154,9 +158,9 @@
         <!-- View: Active Session (Round Table & Game UI) -->
         <section id="view-active-session" class="view hidden">
             <div class="glass-card p-8 rounded-2xl shadow-xl max-w-4xl mx-auto text-center relative overflow-hidden">
-                <button onclick="actions.leaveSession()" class="absolute top-4 left-4 p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-full transition flex items-center gap-2 text-sm font-medium">
+                <button onclick="actions.leaveSession()" class="absolute top-4 left-4 p-2 text-slate-500 hover:bg-slate-100 rounded-full transition flex items-center gap-2 text-sm font-medium">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Leave
+                    <span id="txt-leave-session">Leave</span>
                 </button>
                 
                 <h2 class="text-3xl font-bold text-slate-800 mb-2 mt-10 sm:mt-0">Live Session Table</h2>
@@ -198,7 +202,7 @@
                         </div>
                     </div>
 
-                    <!-- Penalty Overlay (Everyone sees this when a collision happens) -->
+                    <!-- Penalty Overlay -->
                     <div id="penalty-ui" class="hidden absolute inset-0 bg-red-600/95 z-40 flex flex-col items-center justify-center p-4 rounded-full backdrop-blur-md shadow-[0_0_50px_rgba(220,38,38,0.5)] border-8 border-red-500">
                         <h2 class="text-3xl sm:text-4xl font-black text-white mb-2">💥 BOOM!</h2>
                         <p id="penalty-message" class="text-sm text-red-100 font-bold mb-4 text-center leading-tight">Name was caught!</p>
@@ -225,7 +229,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // EXPLICIT CONFIG: Your provided Firebase Credentials
         const firebaseConfig = {
@@ -238,7 +242,6 @@
             measurementId: "G-9K53RM40K9"
         };
         
-        // Static appId to perfectly align with rules
         const dbAppId = "edu_app_1"; 
 
         const app = initializeApp(firebaseConfig);
@@ -255,6 +258,7 @@
         let unsubscribeCollections = null;
         let unsubscribeSession = null;
         let currentSessionData = null;
+        let confirmEndTimeout = null; // Timer for double-tap end session
 
         // Helper to get random questions from bank
         function getRandomQuestions(bank, count) {
@@ -300,8 +304,19 @@
                         </button>
                     `;
                     el.querySelector('.delete-btn').onclick = (e) => {
-                        e.stopPropagation(); // Stop opening collection
-                        actions.deleteCollection(col.id); // Direct delete for iframe safety
+                        e.stopPropagation(); 
+                        // Double tap confirm for safety without browser alerts
+                        if (e.target.dataset.confirm) {
+                            actions.deleteCollection(col.id);
+                        } else {
+                            e.target.dataset.confirm = "true";
+                            e.target.classList.add('text-red-600', 'bg-red-100');
+                            ui.notify("Click delete again to confirm.");
+                            setTimeout(() => {
+                                delete e.target.dataset.confirm;
+                                e.target.classList.remove('text-red-600', 'bg-red-100');
+                            }, 3000);
+                        }
                     };
                     list.appendChild(el);
                 });
@@ -496,11 +511,15 @@
             },
             logout: async () => {
                 try {
+                    if (activeSessionCode && currentRole === 'teacher') {
+                         await actions.leaveSession(true); // Auto clean-up sessions
+                    }
                     await signOut(auth);
                     if (unsubscribeCollections) unsubscribeCollections();
                     if (unsubscribeSession) unsubscribeSession();
                     collectionsList = [];
                     currentSessionData = null;
+                    document.getElementById('btn-active-session').classList.add('hidden');
                     ui.notify("Logged out successfully");
                 } catch(e) {
                     ui.notify("Logout failed");
@@ -626,6 +645,9 @@
             // --- LIVE SESSION & GAME LOGIC ---
             startSession: async () => {
                 if (!currentUser || !activeCollectionId) return;
+                if (activeSessionCode) {
+                    return ui.notify("You already have an active session running!");
+                }
                 
                 const code = Math.random().toString(36).substr(2, 5).toUpperCase();
                 
@@ -643,6 +665,10 @@
                     activeSessionCode = code;
                     document.getElementById('display-join-code').innerText = code;
                     
+                    // Display recovery and session end buttons
+                    document.getElementById('btn-active-session').classList.remove('hidden');
+                    document.getElementById('txt-leave-session').innerText = "End Session";
+                    
                     document.getElementById('teacher-code-display').classList.remove('hidden');
                     document.getElementById('teacher-controls').classList.remove('hidden');
                     document.getElementById('student-waiting-display').classList.add('hidden');
@@ -655,6 +681,12 @@
                             currentSessionData = snap.data();
                             ui.renderTable(currentSessionData.students || []);
                             ui.updateGameUI();
+                        } else {
+                            // Automatically handled if teacher resets it or it was deleted elsewhere
+                            document.getElementById('btn-active-session').classList.add('hidden');
+                            if (unsubscribeSession) unsubscribeSession();
+                            activeSessionCode = null;
+                            currentSessionData = null;
                         }
                     });
                     
@@ -665,6 +697,12 @@
                 }
             },
             
+            returnToSession: () => {
+                if (activeSessionCode) {
+                    ui.showView('active-session');
+                }
+            },
+
             joinSession: async () => {
                 let code = document.getElementById('join-code').value.trim().toUpperCase();
                 let name = document.getElementById('join-name').value.trim();
@@ -695,6 +733,7 @@
                     });
 
                     activeSessionCode = code;
+                    document.getElementById('txt-leave-session').innerText = "Leave Table";
                     document.getElementById('teacher-code-display').classList.add('hidden');
                     document.getElementById('teacher-controls').classList.add('hidden');
                     document.getElementById('student-waiting-display').classList.remove('hidden');
@@ -710,11 +749,11 @@
                             
                             if(currentSessionData.status === 'finished') {
                                 ui.notify("Session ended by teacher.");
-                                actions.leaveSession();
+                                actions.leaveSession(true);
                             }
                         } else {
                             ui.notify("Teacher closed the session.");
-                            actions.leaveSession();
+                            actions.leaveSession(true); // forces leave skipping delete logic
                         }
                     });
                     
@@ -724,36 +763,57 @@
                 }
             },
             
-            leaveSession: async () => {
-                if (unsubscribeSession) unsubscribeSession();
-                
-                if (activeSessionCode) {
-                    try {
-                        const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
-                        
-                        if (currentRole === 'teacher') {
-                            await deleteDoc(sessionRef);
-                            ui.showView('manage-questions');
-                            ui.notify("Session ended.");
-                        } else {
-                            if (activeStudentId) {
-                                const snap = await getDoc(sessionRef);
-                                if(snap.exists()) {
-                                    const me = snap.data().students.find(s => s.id === activeStudentId);
-                                    if(me) await updateDoc(sessionRef, { students: arrayRemove(me) });
-                                }
-                            }
-                            await signOut(auth);
-                            ui.showView('auth');
-                            ui.notify("You left the table.");
+            leaveSession: async (forceEnd = false) => {
+                if (currentRole === 'teacher') {
+                    // Double tap safety implementation
+                    if (!forceEnd) {
+                        const btnText = document.getElementById('txt-leave-session');
+                        if (btnText.innerText !== "Confirm End") {
+                            btnText.innerText = "Confirm End";
+                            btnText.parentElement.classList.add('bg-red-100', 'text-red-700');
+                            clearTimeout(confirmEndTimeout);
+                            confirmEndTimeout = setTimeout(() => {
+                                btnText.innerText = "End Session";
+                                btnText.parentElement.classList.remove('bg-red-100', 'text-red-700');
+                            }, 3000);
+                            return; // Wait for the second click
                         }
-                    } catch(e) {
-                        console.error(e);
                     }
+
+                    if (activeSessionCode) {
+                        try {
+                            const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                            await deleteDoc(sessionRef); // DESTROYS SESSION - forces redirect for all students
+                            ui.notify("Session ended.");
+                        } catch(e) { console.error(e); }
+                    }
+                    if (unsubscribeSession) unsubscribeSession();
+                    activeSessionCode = null;
+                    currentSessionData = null;
+                    document.getElementById('btn-active-session').classList.add('hidden');
+                    document.getElementById('txt-leave-session').innerText = "End Session";
+                    document.getElementById('txt-leave-session').parentElement.classList.remove('bg-red-100', 'text-red-700');
+                    ui.showView('dashboard');
+                } else {
+                    // STUDENT LOGIC
+                    if (unsubscribeSession) unsubscribeSession();
+                    
+                    if (activeSessionCode && activeStudentId && !forceEnd) {
+                        try {
+                            const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                            const snap = await getDoc(sessionRef);
+                            if(snap.exists()) {
+                                const me = snap.data().students.find(s => s.id === activeStudentId);
+                                if(me) await updateDoc(sessionRef, { students: arrayRemove(me) });
+                            }
+                        } catch(e) { console.error(e); }
+                    }
+                    activeSessionCode = null;
+                    activeStudentId = null;
+                    currentSessionData = null;
+                    await signOut(auth); // THIS TRIGGERS THE REDIRECT TO FRONT PAGE
+                    ui.notify("You left the session.");
                 }
-                activeSessionCode = null;
-                activeStudentId = null;
-                currentSessionData = null;
             },
 
             startGame: async () => {
@@ -843,8 +903,8 @@
             }
         };
 
-        // AUTH LISTENER
-        onAuthStateChanged(auth, (user) => {
+        // AUTH LISTENER & INITIAL RECOVERY
+        onAuthStateChanged(auth, async (user) => {
             currentUser = user;
             const authView = document.getElementById('view-auth');
             const mainApp = document.getElementById('main-app');
@@ -852,13 +912,45 @@
             const headerActions = document.getElementById('header-actions');
 
             if (user && !user.isAnonymous) {
+                // TEACHER VIEW
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 headerActions.classList.remove('hidden');
                 userDisplay.innerHTML = `<span class="font-semibold text-indigo-600">Teacher: ${user.email}</span>`;
                 
+                // Fetch existing session for safe recovery if teacher refreshed
+                if (!activeSessionCode) {
+                    try {
+                        const sessionsRef = collection(db, 'artifacts', dbAppId, 'public', 'data', 'sessions');
+                        const snapshot = await getDocs(sessionsRef);
+                        const mySession = snapshot.docs.find(d => d.data().teacherId === user.uid);
+                        
+                        if (mySession) {
+                            activeSessionCode = mySession.id;
+                            document.getElementById('btn-active-session').classList.remove('hidden');
+                            document.getElementById('display-join-code').innerText = activeSessionCode;
+                            document.getElementById('txt-leave-session').innerText = "End Session";
+                            document.getElementById('teacher-code-display').classList.remove('hidden');
+                            document.getElementById('teacher-controls').classList.remove('hidden');
+                            document.getElementById('student-waiting-display').classList.add('hidden');
+                            
+                            unsubscribeSession = onSnapshot(doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode), (snap) => {
+                                if(snap.exists()) {
+                                    currentSessionData = snap.data();
+                                    ui.renderTable(currentSessionData.students || []);
+                                    ui.updateGameUI();
+                                } else {
+                                    document.getElementById('btn-active-session').classList.add('hidden');
+                                    if (unsubscribeSession) unsubscribeSession();
+                                    activeSessionCode = null;
+                                    currentSessionData = null;
+                                }
+                            });
+                        }
+                    } catch(e) { console.error("Recovery failed", e); }
+                }
+
                 const colPath = collection(db, 'artifacts', dbAppId, 'users', user.uid, 'collections');
-                
                 unsubscribeCollections = onSnapshot(colPath, (snap) => {
                     collectionsList = snap.docs.map(d => d.data());
                     ui.renderCollections(collectionsList);
@@ -874,18 +966,17 @@
                             }
                         }
                     }
-                }, (err) => {
-                    console.error("Firestore Sync Error:", err);
-                    ui.notify("Database connection issue. Check console.");
                 });
                 
             } else if (user && user.isAnonymous && currentRole === 'student') {
+                 // STUDENT VIEW (Active Session)
                  authView.classList.add('hidden');
                  mainApp.classList.remove('hidden');
                  headerActions.classList.add('hidden');
                  userDisplay.innerHTML = `<span class="font-semibold text-emerald-600 flex items-center gap-2"><div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live Student Mode</span>`;
                  
             } else {
+                // LOGGED OUT / REDIRECTED TO FRONT PAGE
                 authView.classList.remove('hidden');
                 mainApp.classList.add('hidden');
                 headerActions.classList.remove('hidden');
