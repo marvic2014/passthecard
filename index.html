@@ -517,14 +517,14 @@
             logout: async () => {
                 try {
                     if (activeSessionCode && currentRole === 'teacher') {
-                         await actions.leaveSession(true); // Auto clean-up sessions
+                         await actions.leaveSession(true); 
                     }
                     await signOut(auth);
                     if (unsubscribeCollections) unsubscribeCollections();
                     if (unsubscribeSession) unsubscribeSession();
                     collectionsList = [];
                     currentSessionData = null;
-                    document.getElementById('btn-active-session').classList.add('hidden');
+                    document.getElementById('active-session-container').classList.add('hidden');
                     ui.notify("Logged out successfully");
                 } catch(e) {
                     ui.notify("Logout failed");
@@ -651,7 +651,7 @@
             startSession: async () => {
                 if (!currentUser || !activeCollectionId) return;
                 
-                // Auto-cleanup any orphaned sessions before starting to prevent locks
+                // Auto-cleanup orphaned sessions first
                 try {
                     const sessionsRef = collection(db, 'artifacts', dbAppId, 'public', 'data', 'sessions');
                     const snapshot = await getDocs(sessionsRef);
@@ -682,7 +682,6 @@
                     activeSessionCode = code;
                     document.getElementById('display-join-code').innerText = code;
                     
-                    // Display recovery and session end buttons
                     document.getElementById('active-session-container').classList.remove('hidden');
                     document.getElementById('txt-leave-session').innerText = "End Session";
                     
@@ -720,11 +719,12 @@
             },
             
             killRecoveredSession: async () => {
+                // Allows teacher to kill active session quickly from the top bar
                 if(confirm("Are you sure you want to end your active session immediately?")) {
                     if (activeSessionCode) {
                         try {
                             const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
-                            await deleteDoc(sessionRef);
+                            await deleteDoc(sessionRef); // DESTROYS session, kicking all students instantly
                             ui.notify("Session successfully ended.");
                         } catch(e) { console.error("Error killing session", e); }
                     }
@@ -757,7 +757,6 @@
                         return ui.notify("Session not found. Check code.");
                     }
                     
-                    // Add student to the session
                     activeStudentId = auth.currentUser.uid;
                     const studentData = { id: activeStudentId, name: name };
                     
@@ -780,13 +779,15 @@
                             ui.renderTable(currentSessionData.students || []);
                             ui.updateGameUI();
                             
+                            // If teacher explicitly pushed 'finished' state
                             if(currentSessionData.status === 'finished') {
                                 ui.notify("Session ended by teacher.");
                                 actions.leaveSession(true);
                             }
                         } else {
+                            // If teacher killed the session document entirely
                             ui.notify("Teacher closed the session.");
-                            actions.leaveSession(true); // forces leave skipping delete logic
+                            actions.leaveSession(true);
                         }
                     });
                     
@@ -809,7 +810,7 @@
                                 btnText.innerText = "End Session";
                                 btnText.parentElement.classList.remove('bg-red-100', 'text-red-700');
                             }, 3000);
-                            return; // Wait for the second click
+                            return; 
                         }
                     }
 
@@ -831,6 +832,7 @@
                     // STUDENT LOGIC
                     if (unsubscribeSession) unsubscribeSession();
                     
+                    // Only try to remove self from array if the session still exists
                     if (activeSessionCode && activeStudentId && !forceEnd) {
                         try {
                             const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
@@ -841,10 +843,21 @@
                             }
                         } catch(e) { console.error(e); }
                     }
+                    
                     activeSessionCode = null;
                     activeStudentId = null;
                     currentSessionData = null;
-                    await signOut(auth); // THIS TRIGGERS THE REDIRECT TO FRONT PAGE
+                    
+                    // FORCED CLEANUP: Instantly reset game UI states so nothing gets stuck on screen
+                    document.getElementById('game-ui').classList.add('hidden');
+                    document.getElementById('penalty-ui').classList.add('hidden');
+                    document.getElementById('view-auth').classList.remove('hidden');
+                    document.getElementById('main-app').classList.add('hidden');
+                    
+                    try {
+                        await signOut(auth); // Sign out anonymous user completely
+                    } catch(e) { console.error("Signout error", e); }
+                    
                     ui.notify("You left the session.");
                 }
             },
@@ -968,7 +981,7 @@
                             document.getElementById('teacher-controls').classList.remove('hidden');
                             document.getElementById('student-waiting-display').classList.add('hidden');
                             
-                            // Delete any other stuck ghosts
+                            // Delete any other stuck ghosts (cleanup)
                             for(let i=1; i < mySessions.length; i++) {
                                 await deleteDoc(mySessions[i].ref);
                             }
@@ -1008,6 +1021,12 @@
                 });
                 
             } else if (user && user.isAnonymous && currentRole === 'student') {
+                 // FIX TRAP: If a student refreshes, they shouldn't be trapped in mainApp without a session.
+                 if (!activeSessionCode) {
+                     signOut(auth); 
+                     return;
+                 }
+                 
                  // STUDENT VIEW (Active Session)
                  authView.classList.add('hidden');
                  mainApp.classList.remove('hidden');
