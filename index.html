@@ -58,9 +58,14 @@
             </div>
             <div id="header-actions" class="flex flex-wrap items-center gap-2">
                 <!-- Teacher's Session Management Indicator -->
-                <button id="btn-active-session" onclick="actions.returnToSession()" class="hidden px-4 py-2 text-sm font-bold bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition shadow-sm animate-pulse border border-emerald-300 mr-2">
-                    🟢 Active Session
-                </button>
+                <div id="active-session-container" class="hidden flex items-center mr-2 bg-emerald-100 rounded-lg border border-emerald-300 shadow-sm animate-pulse">
+                    <button onclick="actions.returnToSession()" class="px-3 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-200 transition rounded-l-lg">
+                        🟢 Active Session
+                    </button>
+                    <button onclick="actions.killRecoveredSession()" class="px-3 py-2 text-emerald-600 hover:text-white hover:bg-red-500 transition rounded-r-lg border-l border-emerald-200" title="End Session">
+                        ✕
+                    </button>
+                </div>
                 <button onclick="ui.showView('dashboard')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">My Collections</button>
                 <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm">+ New Collection</button>
                 <button onclick="authActions.logout()" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Logout</button>
@@ -645,9 +650,21 @@
             // --- LIVE SESSION & GAME LOGIC ---
             startSession: async () => {
                 if (!currentUser || !activeCollectionId) return;
-                if (activeSessionCode) {
-                    return ui.notify("You already have an active session running!");
-                }
+                
+                // Auto-cleanup any orphaned sessions before starting to prevent locks
+                try {
+                    const sessionsRef = collection(db, 'artifacts', dbAppId, 'public', 'data', 'sessions');
+                    const snapshot = await getDocs(sessionsRef);
+                    const mySessions = snapshot.docs.filter(d => d.data().teacherId === currentUser.uid);
+                    for (const docSnap of mySessions) {
+                        await deleteDoc(docSnap.ref);
+                    }
+                } catch(e) { console.warn("Cleanup warning:", e); }
+
+                if (unsubscribeSession) unsubscribeSession();
+                activeSessionCode = null;
+                currentSessionData = null;
+                document.getElementById('active-session-container').classList.add('hidden');
                 
                 const code = Math.random().toString(36).substr(2, 5).toUpperCase();
                 
@@ -666,7 +683,7 @@
                     document.getElementById('display-join-code').innerText = code;
                     
                     // Display recovery and session end buttons
-                    document.getElementById('btn-active-session').classList.remove('hidden');
+                    document.getElementById('active-session-container').classList.remove('hidden');
                     document.getElementById('txt-leave-session').innerText = "End Session";
                     
                     document.getElementById('teacher-code-display').classList.remove('hidden');
@@ -682,8 +699,7 @@
                             ui.renderTable(currentSessionData.students || []);
                             ui.updateGameUI();
                         } else {
-                            // Automatically handled if teacher resets it or it was deleted elsewhere
-                            document.getElementById('btn-active-session').classList.add('hidden');
+                            document.getElementById('active-session-container').classList.add('hidden');
                             if (unsubscribeSession) unsubscribeSession();
                             activeSessionCode = null;
                             currentSessionData = null;
@@ -700,6 +716,22 @@
             returnToSession: () => {
                 if (activeSessionCode) {
                     ui.showView('active-session');
+                }
+            },
+            
+            killRecoveredSession: async () => {
+                if(confirm("Are you sure you want to end your active session immediately?")) {
+                    if (activeSessionCode) {
+                        try {
+                            const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                            await deleteDoc(sessionRef);
+                            ui.notify("Session successfully ended.");
+                        } catch(e) { console.error("Error killing session", e); }
+                    }
+                    if (unsubscribeSession) unsubscribeSession();
+                    activeSessionCode = null;
+                    currentSessionData = null;
+                    document.getElementById('active-session-container').classList.add('hidden');
                 }
             },
 
@@ -725,6 +757,7 @@
                         return ui.notify("Session not found. Check code.");
                     }
                     
+                    // Add student to the session
                     activeStudentId = auth.currentUser.uid;
                     const studentData = { id: activeStudentId, name: name };
                     
@@ -790,7 +823,7 @@
                     if (unsubscribeSession) unsubscribeSession();
                     activeSessionCode = null;
                     currentSessionData = null;
-                    document.getElementById('btn-active-session').classList.add('hidden');
+                    document.getElementById('active-session-container').classList.add('hidden');
                     document.getElementById('txt-leave-session').innerText = "End Session";
                     document.getElementById('txt-leave-session').parentElement.classList.remove('bg-red-100', 'text-red-700');
                     ui.showView('dashboard');
@@ -923,16 +956,22 @@
                     try {
                         const sessionsRef = collection(db, 'artifacts', dbAppId, 'public', 'data', 'sessions');
                         const snapshot = await getDocs(sessionsRef);
-                        const mySession = snapshot.docs.find(d => d.data().teacherId === user.uid);
+                        const mySessions = snapshot.docs.filter(d => d.data().teacherId === user.uid);
                         
-                        if (mySession) {
-                            activeSessionCode = mySession.id;
-                            document.getElementById('btn-active-session').classList.remove('hidden');
+                        if (mySessions.length > 0) {
+                            // Recover the most recent one
+                            activeSessionCode = mySessions[0].id;
+                            document.getElementById('active-session-container').classList.remove('hidden');
                             document.getElementById('display-join-code').innerText = activeSessionCode;
                             document.getElementById('txt-leave-session').innerText = "End Session";
                             document.getElementById('teacher-code-display').classList.remove('hidden');
                             document.getElementById('teacher-controls').classList.remove('hidden');
                             document.getElementById('student-waiting-display').classList.add('hidden');
+                            
+                            // Delete any other stuck ghosts
+                            for(let i=1; i < mySessions.length; i++) {
+                                await deleteDoc(mySessions[i].ref);
+                            }
                             
                             unsubscribeSession = onSnapshot(doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode), (snap) => {
                                 if(snap.exists()) {
@@ -940,7 +979,7 @@
                                     ui.renderTable(currentSessionData.students || []);
                                     ui.updateGameUI();
                                 } else {
-                                    document.getElementById('btn-active-session').classList.add('hidden');
+                                    document.getElementById('active-session-container').classList.add('hidden');
                                     if (unsubscribeSession) unsubscribeSession();
                                     activeSessionCode = null;
                                     currentSessionData = null;
