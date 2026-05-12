@@ -19,10 +19,26 @@
 
     <!-- Auth View -->
     <div id="view-auth" class="flex items-center justify-center min-h-screen p-4">
-        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md">
-            <h2 id="auth-title" class="text-2xl font-bold text-slate-800 mb-2">Teacher Login</h2>
-            <p id="auth-subtitle" class="text-slate-500 mb-6 text-sm">Sign in to manage your question collections.</p>
-            <div class="space-y-4">
+        <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md transition-all">
+            <!-- Role Toggle -->
+            <div class="flex mb-6 bg-slate-100 p-1 rounded-lg">
+                <button id="tab-student" onclick="authActions.switchRole('student')" class="flex-1 py-2 text-sm font-bold bg-white shadow-sm rounded-md text-indigo-700 transition">Student Join</button>
+                <button id="tab-teacher" onclick="authActions.switchRole('teacher')" class="flex-1 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 rounded-md transition">Teacher Login</button>
+            </div>
+
+            <!-- Student Join Form -->
+            <div id="form-student" class="space-y-4">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Join a Session</h2>
+                <p class="text-slate-500 mb-6 text-sm">Enter the 5-digit code provided by your teacher.</p>
+                <input type="text" id="join-code" placeholder="Session Code (e.g. AB12C)" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 uppercase font-mono tracking-widest text-center text-lg">
+                <input type="text" id="join-name" placeholder="Your First Name" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 text-center text-lg">
+                <button onclick="actions.joinSession()" class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold hover:bg-emerald-700 transition shadow-md">Join Table</button>
+            </div>
+
+            <!-- Teacher Login Form -->
+            <div id="form-teacher" class="hidden space-y-4">
+                <h2 id="auth-title" class="text-2xl font-bold text-slate-800 mb-2">Teacher Login</h2>
+                <p id="auth-subtitle" class="text-slate-500 mb-6 text-sm">Sign in to manage your question collections.</p>
                 <input type="email" id="auth-email" placeholder="Email Address" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
                 <input type="password" id="auth-password" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
                 <button id="btn-auth-primary" onclick="authActions.handleAuth()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">Login</button>
@@ -40,7 +56,7 @@
                 <h1 class="text-3xl font-bold text-slate-800">EduCollector</h1>
                 <p id="user-display" class="text-slate-500 text-sm">Authenticating...</p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div id="header-actions" class="flex flex-wrap gap-2">
                 <button onclick="ui.showView('dashboard')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">My Collections</button>
                 <button onclick="ui.showView('create-collection')" class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm">+ New Collection</button>
                 <button onclick="authActions.logout()" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Logout</button>
@@ -78,11 +94,17 @@
 
         <!-- View: Manage Questions -->
         <section id="view-manage-questions" class="view hidden">
-            <div class="flex items-center mb-6 gap-4">
-                <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition" title="Back to Dashboard">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            <div class="flex items-center justify-between mb-6 gap-4">
+                <div class="flex items-center gap-4">
+                    <button onclick="ui.showView('dashboard')" class="p-2 hover:bg-slate-200 rounded-full transition" title="Back to Dashboard">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <h2 id="active-collection-title" class="text-2xl font-bold text-slate-800">Questions</h2>
+                </div>
+                <button onclick="actions.startSession()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-bold shadow-md transition flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Host Live Session
                 </button>
-                <h2 id="active-collection-title" class="text-2xl font-bold text-slate-800">Questions</h2>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -128,6 +150,45 @@
                 </div>
             </div>
         </section>
+
+        <!-- View: Active Session (Round Table) -->
+        <section id="view-active-session" class="view hidden">
+            <div class="glass-card p-8 rounded-2xl shadow-xl max-w-4xl mx-auto text-center relative overflow-hidden">
+                <button onclick="actions.leaveSession()" class="absolute top-4 left-4 p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-full transition flex items-center gap-2 text-sm font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Leave
+                </button>
+                
+                <h2 class="text-3xl font-bold text-slate-800 mb-2 mt-4 sm:mt-0">Live Session Table</h2>
+                
+                <!-- Teacher's display: Show Code -->
+                <div id="teacher-code-display" class="hidden mb-8 mt-4">
+                    <p class="text-slate-500 mb-2">Ask your students to join with this code:</p>
+                    <div class="inline-block bg-indigo-50 border-2 border-indigo-200 text-indigo-700 text-5xl font-mono font-bold tracking-[0.2em] px-10 py-4 rounded-xl shadow-inner">
+                        <span id="display-join-code">-----</span>
+                    </div>
+                </div>
+
+                <!-- Student's display -->
+                <div id="student-waiting-display" class="hidden mb-8 mt-4">
+                    <p class="text-slate-500 bg-emerald-50 text-emerald-700 inline-block px-4 py-2 rounded-full font-medium border border-emerald-100 shadow-sm animate-pulse">You are seated at the table. Waiting for the teacher...</p>
+                </div>
+
+                <!-- Round Table Visualization -->
+                <div class="relative w-72 h-72 sm:w-[400px] sm:h-[400px] mx-auto mt-12 mb-12">
+                    <!-- The Table Graphic -->
+                    <div class="absolute inset-10 rounded-full bg-amber-700 border-[16px] border-amber-900 shadow-2xl flex items-center justify-center">
+                        <div class="text-amber-300 font-bold opacity-30 text-3xl rotate-[-15deg] pointer-events-none select-none">EduTable</div>
+                    </div>
+                    <!-- Students Container (Where avatars are injected) -->
+                    <div id="students-table-container" class="absolute inset-0"></div>
+                </div>
+
+                <div id="teacher-controls" class="hidden border-t border-slate-200 pt-6 mt-6">
+                    <p class="text-slate-600 font-medium mb-4"><span id="student-count" class="font-bold text-indigo-600 text-lg">0</span> students joined</p>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Toast Notification -->
@@ -137,8 +198,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, updateDoc, onSnapshot, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // EXPLICIT CONFIG: Your provided Firebase Credentials
         const firebaseConfig = {
@@ -162,7 +223,11 @@
         let collectionsList = [];
         let activeCollectionId = null;
         let isLoginMode = true;
+        let currentRole = 'student'; // 'student' or 'teacher'
+        let activeSessionCode = null;
+        let activeStudentId = null;
         let unsubscribeCollections = null; // To clean up listener on logout
+        let unsubscribeSession = null; // Real-time table updates
 
         // UI HELPERS
         const ui = {
@@ -248,12 +313,67 @@
                     row.querySelector('.remove-q-btn').onclick = () => actions.removeQuestion(q);
                     tbody.appendChild(row);
                 });
+            },
+            renderTable: (students) => {
+                const container = document.getElementById('students-table-container');
+                container.innerHTML = '';
+                document.getElementById('student-count').innerText = students.length;
+
+                // Radius of the circle where students sit
+                const radius = (container.offsetWidth / 2) - 24; 
+                
+                students.forEach((s, i) => {
+                    // Calculate angle for evenly spaced seating
+                    const angle = (i / students.length) * 2 * Math.PI - (Math.PI / 2);
+                    
+                    const el = document.createElement('div');
+                    el.className = 'absolute w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-base font-bold transition-all duration-700 ease-out z-10';
+                    
+                    // Highlight the current user differently
+                    if (s.id === activeStudentId) {
+                        el.classList.add('bg-emerald-500', 'border-4', 'border-white', 'ring-4', 'ring-emerald-200');
+                    } else {
+                        el.classList.add('bg-indigo-500', 'border-4', 'border-indigo-200');
+                    }
+
+                    // Position using math relative to center
+                    el.style.left = '50%';
+                    el.style.top = '50%';
+                    el.style.transform = `translate(-50%, -50%) translate(${radius * Math.cos(angle)}px, ${radius * Math.sin(angle)}px)`;
+                    
+                    // Name label and initial
+                    el.innerHTML = `
+                        ${s.name.substring(0, 2).toUpperCase()}
+                        <span class="absolute -bottom-7 text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded shadow-md whitespace-nowrap pointer-events-none">${s.name}</span>
+                    `;
+                    
+                    container.appendChild(el);
+                });
             }
         };
         window.ui = ui;
 
         // ACTIONS
         window.authActions = {
+            switchRole: (role) => {
+                currentRole = role;
+                const btnStudent = document.getElementById('tab-student');
+                const btnTeacher = document.getElementById('tab-teacher');
+                const formStudent = document.getElementById('form-student');
+                const formTeacher = document.getElementById('form-teacher');
+
+                if (role === 'student') {
+                    btnStudent.className = "flex-1 py-2 text-sm font-bold bg-white shadow-sm rounded-md text-indigo-700 transition";
+                    btnTeacher.className = "flex-1 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-md transition";
+                    formStudent.classList.remove('hidden');
+                    formTeacher.classList.add('hidden');
+                } else {
+                    btnTeacher.className = "flex-1 py-2 text-sm font-bold bg-white shadow-sm rounded-md text-indigo-700 transition";
+                    btnStudent.className = "flex-1 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded-md transition";
+                    formTeacher.classList.remove('hidden');
+                    formStudent.classList.add('hidden');
+                }
+            },
             toggleMode: () => {
                 isLoginMode = !isLoginMode;
                 document.getElementById('auth-title').innerText = isLoginMode ? 'Teacher Login' : 'Create Teacher Account';
@@ -413,6 +533,146 @@
                     event.target.value = ''; // Reset file input
                 };
                 reader.readAsText(file);
+            },
+            
+            // --- LIVE SESSION LOGIC ---
+            startSession: async () => {
+                if (!currentUser || !activeCollectionId) return;
+                
+                // Generate a random 5 character uppercase code
+                const code = Math.random().toString(36).substr(2, 5).toUpperCase();
+                
+                try {
+                    // Uses the PUBLIC path
+                    const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', code);
+                    await setDoc(sessionRef, {
+                        code: code,
+                        teacherId: currentUser.uid,
+                        collectionId: activeCollectionId,
+                        status: 'waiting',
+                        students: [],
+                        createdAt: new Date().toISOString()
+                    });
+
+                    activeSessionCode = code;
+                    document.getElementById('display-join-code').innerText = code;
+                    
+                    // UI toggles for Teacher Host
+                    document.getElementById('teacher-code-display').classList.remove('hidden');
+                    document.getElementById('teacher-controls').classList.remove('hidden');
+                    document.getElementById('student-waiting-display').classList.add('hidden');
+                    
+                    ui.showView('active-session');
+                    
+                    // Real-time listener for joining students
+                    if(unsubscribeSession) unsubscribeSession();
+                    unsubscribeSession = onSnapshot(sessionRef, (snap) => {
+                        if(snap.exists()) {
+                            ui.renderTable(snap.data().students || []);
+                        }
+                    });
+                    
+                    ui.notify("Session started! Share code with students.");
+                } catch(err) {
+                    console.error("Session Start Error:", err);
+                    ui.notify("Failed to start session. Did you update the Firebase rules?");
+                }
+            },
+            
+            joinSession: async () => {
+                let code = document.getElementById('join-code').value.trim().toUpperCase();
+                let name = document.getElementById('join-name').value.trim();
+                
+                if (!code || !name) return ui.notify("Please enter both the code and your name.");
+                
+                // 1. Authenticate anonymously if not logged in
+                if (!currentUser) {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch(e) {
+                        return ui.notify("Connection error joining session.");
+                    }
+                }
+
+                try {
+                    const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', code);
+                    const snap = await getDoc(sessionRef);
+                    
+                    if (!snap.exists()) {
+                        return ui.notify("Session not found. Check code.");
+                    }
+                    
+                    // 2. Add student to session
+                    activeStudentId = currentUser.uid;
+                    const studentData = { id: activeStudentId, name: name };
+                    
+                    await updateDoc(sessionRef, {
+                        students: arrayUnion(studentData)
+                    });
+
+                    // 3. Setup UI for Student
+                    activeSessionCode = code;
+                    document.getElementById('teacher-code-display').classList.add('hidden');
+                    document.getElementById('teacher-controls').classList.add('hidden');
+                    document.getElementById('student-waiting-display').classList.remove('hidden');
+                    
+                    ui.showView('active-session');
+                    
+                    // 4. Listen to table updates
+                    if(unsubscribeSession) unsubscribeSession();
+                    unsubscribeSession = onSnapshot(sessionRef, (snap) => {
+                        if(snap.exists()) {
+                            ui.renderTable(snap.data().students || []);
+                            
+                            // Check if teacher kicked us or ended session
+                            if(snap.data().status === 'finished') {
+                                ui.notify("Session ended by teacher.");
+                                actions.leaveSession();
+                            }
+                        } else {
+                            ui.notify("Teacher closed the session.");
+                            actions.leaveSession();
+                        }
+                    });
+                    
+                } catch(err) {
+                    console.error("Join Error:", err);
+                    ui.notify("Error joining session.");
+                }
+            },
+            
+            leaveSession: async () => {
+                if (unsubscribeSession) unsubscribeSession();
+                
+                if (activeSessionCode) {
+                    try {
+                        const sessionRef = doc(db, 'artifacts', dbAppId, 'public', 'data', 'sessions', activeSessionCode);
+                        
+                        if (currentRole === 'teacher') {
+                            // Teacher deletes the whole session
+                            await deleteDoc(sessionRef);
+                            ui.showView('manage-questions');
+                            ui.notify("Session ended.");
+                        } else {
+                            // Student removes only themselves
+                            if (activeStudentId) {
+                                const snap = await getDoc(sessionRef);
+                                if(snap.exists()) {
+                                    const me = snap.data().students.find(s => s.id === activeStudentId);
+                                    if(me) await updateDoc(sessionRef, { students: arrayRemove(me) });
+                                }
+                            }
+                            // Sign out anonymous user and reset to landing
+                            await signOut(auth);
+                            ui.showView('auth');
+                            ui.notify("You left the table.");
+                        }
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+                activeSessionCode = null;
+                activeStudentId = null;
             }
         };
 
@@ -422,14 +682,15 @@
             const authView = document.getElementById('view-auth');
             const mainApp = document.getElementById('main-app');
             const userDisplay = document.getElementById('user-display');
+            const headerActions = document.getElementById('header-actions');
 
-            if (user) {
-                // User is signed in
+            if (user && !user.isAnonymous) {
+                // TEACHER: Authenticated with Email/Pass
                 authView.classList.add('hidden');
                 mainApp.classList.remove('hidden');
-                userDisplay.innerHTML = `<span class="font-semibold text-indigo-600">${user.email}</span>`;
+                headerActions.classList.remove('hidden'); // Show New Col/Logout
+                userDisplay.innerHTML = `<span class="font-semibold text-indigo-600">Teacher: ${user.email}</span>`;
                 
-                // Set up the listener for this specific user's collections
                 const colPath = collection(db, 'artifacts', dbAppId, 'users', user.uid, 'collections');
                 
                 unsubscribeCollections = onSnapshot(colPath, (snap) => {
@@ -442,9 +703,11 @@
                         if (active) {
                             ui.renderQuestions(active.questions || []);
                         } else {
-                            // Collection was deleted while we were viewing it
-                            ui.showView('dashboard');
-                            activeCollectionId = null;
+                            // Only force redirect if we aren't busy hosting a session
+                            if (!activeSessionCode) {
+                                ui.showView('dashboard');
+                                activeCollectionId = null;
+                            }
                         }
                     }
                 }, (err) => {
@@ -452,13 +715,21 @@
                     ui.notify("Database connection issue. Check console.");
                 });
                 
+            } else if (user && user.isAnonymous && currentRole === 'student') {
+                 // STUDENT: Joined via code. Keep main app visible but hide teacher header actions
+                 authView.classList.add('hidden');
+                 mainApp.classList.remove('hidden');
+                 headerActions.classList.add('hidden');
+                 userDisplay.innerHTML = `<span class="font-semibold text-emerald-600 flex items-center gap-2"><div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live Student Mode</span>`;
+                 
             } else {
-                // User is signed out
+                // LOGGED OUT completely
                 authView.classList.remove('hidden');
                 mainApp.classList.add('hidden');
+                headerActions.classList.remove('hidden'); // Reset for next login
                 userDisplay.innerText = "Authenticating...";
                 document.getElementById('auth-password').value = '';
-                ui.showView('dashboard'); // reset view state
+                if (!activeSessionCode) ui.showView('dashboard'); // reset state safely
             }
         });
 
