@@ -191,28 +191,14 @@
                 </div>
 
                 <!-- Round Table Visualization -->
-                <div class="relative w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] mx-auto mt-12 mb-12">
+                <div class="relative w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] mx-auto mt-12 mb-8">
                     <!-- The Table Graphic -->
                     <div class="absolute inset-10 rounded-full bg-amber-700 border-[16px] border-amber-900 shadow-2xl flex items-center justify-center">
                         <div class="text-amber-300 font-bold opacity-30 text-2xl sm:text-3xl rotate-[-15deg] pointer-events-none select-none">EduTable</div>
                     </div>
                     
                     <!-- Students Container (Where avatars are injected) -->
-                    <div id="students-table-container" class="absolute inset-0"></div>
-                    
-                    <!-- Game UI Overlay (Student Answers) -->
-                    <div id="game-ui" class="hidden absolute inset-0 bg-slate-900/90 z-30 flex items-center justify-center p-4 rounded-full backdrop-blur-sm shadow-2xl border-4 border-indigo-500 transition-all">
-                        <div class="bg-white p-5 rounded-2xl w-full max-w-[280px] shadow-2xl text-center transform scale-95 animate-in zoom-in duration-200">
-                            <div class="flex justify-between items-center mb-2">
-                                <span id="card-title" class="text-xs font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Card</span>
-                                <span id="card-progress" class="text-xs font-bold text-slate-500">0/1</span>
-                            </div>
-                            <p id="card-question" class="text-sm font-bold text-slate-800 mb-4 h-12 overflow-hidden flex items-center justify-center">Question?</p>
-                            <input type="text" id="card-answer" autocomplete="off" onkeydown="if(event.key === 'Enter') actions.submitAnswer()" placeholder="Your answer..." class="w-full p-2 border-2 border-slate-200 rounded-lg mb-2 text-center focus:border-indigo-500 outline-none text-sm font-medium">
-                            <button onclick="actions.submitAnswer()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm shadow">Submit</button>
-                            <p id="card-feedback" class="text-red-500 text-xs mt-2 hidden font-bold animate-pulse">Incorrect, try again!</p>
-                        </div>
-                    </div>
+                    <div id="students-table-container" class="absolute inset-0 z-10"></div>
 
                     <!-- Penalty Overlay -->
                     <div id="penalty-ui" class="hidden absolute inset-0 bg-red-600/95 z-40 flex flex-col items-center justify-center p-4 rounded-full backdrop-blur-md shadow-[0_0_50px_rgba(220,38,38,0.5)] border-8 border-red-500">
@@ -221,6 +207,18 @@
                         <button id="btn-reset-round" onclick="actions.resetRound()" class="hidden bg-white text-red-700 font-black px-6 py-2 rounded-full hover:bg-red-50 transition shadow-xl text-sm transform hover:scale-105">Reset Round</button>
                         <div id="auto-resume-text" class="hidden text-white font-bold mt-4 animate-pulse">Auto-resuming round...</div>
                     </div>
+                </div>
+
+                <!-- Game UI (Student Answers) Moved BELOW the table -->
+                <div id="game-ui" class="hidden mx-auto max-w-xs bg-white p-5 rounded-2xl shadow-xl border-4 border-indigo-500 transition-all mb-8 z-30 relative">
+                    <div class="flex justify-between items-center mb-2">
+                        <span id="card-title" class="text-xs font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Card</span>
+                        <span id="card-progress" class="text-xs font-bold text-slate-500">0/1</span>
+                    </div>
+                    <p id="card-question" class="text-sm font-bold text-slate-800 mb-4 h-12 overflow-hidden flex items-center justify-center">Question?</p>
+                    <input type="text" id="card-answer" autocomplete="off" onkeydown="if(event.key === 'Enter') actions.submitAnswer()" placeholder="Your answer..." class="w-full p-2 border-2 border-slate-200 rounded-lg mb-2 text-center focus:border-indigo-500 outline-none text-sm font-medium">
+                    <button onclick="actions.submitAnswer()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition text-sm shadow">Submit</button>
+                    <p id="card-feedback" class="text-red-500 text-xs mt-2 hidden font-bold animate-pulse">Incorrect, try again!</p>
                 </div>
 
                 <!-- Public Penalty Board -->
